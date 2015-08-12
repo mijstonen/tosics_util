@@ -47,6 +47,7 @@ Name=demos
 Type=Native Application
 
 [Launch][Launch Configuration 1][Data]
+Configured from ProjectItem=util,demos
 Project Target=util,demos
 Working Directory=file:///home/michel/Projects/Kdevelop/util_build/
 isExecutable=false

@@ -1181,127 +1181,58 @@ int setFileSize( int _fd, size_t _size, bool _grow=true);
 
 
 
-//////////////////
+//: findIndex
+/**
+ @brief Find index (in reverse order) of strings in a array, to apply switch i.s.o long 'if else if' list.
+ @param[in,out] _NumberOfItems_in_indexOut_ in: Number of items in the array (see below),
+                out the index number found or 0 if not found.
+ @param[in] _texts Array of strings to be found, additionally the search string should be on _texts[0].
 
-/*
- Sick of if ( !strmcmp(...) ) {
+ Sick of
+         if ( !strmcmp(...) ) {
          } else if ( !strmcmp(...) ) { ...
          } else if ( !strmcmp(...) ) { ...
          } else if ( !strmcmp(...) ) { ...
          } else { ...
          }
- lists?
 
- FindIndex offers a fast and simple solution. It calcs the index of a string in a array
- which is to be fed to a switch construct. FindIndex() is a one liner that is easily
- inlined. Due to its simplicity and possible code caching it runs at top speed.
- It was originally designed to detect programming language keywords.
+         ?
 
- Sample that can be copied as template to fill.
- ----------------------------------------------
- static const char* nonParenKeywords[]=
-                {"try","do","switch","case","else"};
- int index= INTEMS_IN(nonParenKeywords)
- FindIndex( &index, nonParenKeywords, newSymbol);
- LOG_switch(index);
- switch ( index ) {
-     case  4: LOG_case("else");
-         ...
-         break;
-     case  3: LOG_case("case");
-         ...
-         break;
-     case  2: LOG_case("switch");
-         ...
-         break;
-     case  1: LOG_case("do");
-         ...
-         break;
-     case  0: LOG_case("try");
-         ...                break;
-     case -1: LOG_case("no matching keyword");
-         ...
+  prefering form of
+    switch( found ) {
+      case "..."
+      break;
 
-     default: LOG_default("This should never happen, "
-           "check nonParenKeywords and their "
-           "indexes and the cases handled");
-         LOG_throw("came to switch default in .....");
-         throw ".ERROR: Came to switch default in ....";
+      case "..."
+      break;
+      ....
+  }
 
-example2: creating keyword detectors
+  ?
 
-    auto fruitId=
-    [](char const* _current) -> int
-    {
-        char const* fruit[]={"appel", "peer", "banaan","kers", "druif", "aardbei"};
-        int index= ITEMS_IN(fruit);
-        util::FindIndex(&index, fruit,_current);
-#if DEBUG
-        if ( index>=0 ) {
-            assert( !strcmp(fruit[index],_current));
-        }
-#endif
-        return index;
-    };
+  1. create a array kind of list of items
+  2. put the item to search for as first  (items[0])
+  3  Declare a int and initialize from from ITEMS_IN(items)
+  4  Call findIndex
+  5  Use the result, probably in a switch
 
-    INFO(VARVAL(fruitId("banaan")));
- }
 
- Note that the locallity of the keyword list to the FindIndex call is essential, because can then
- read the code easily without poluting the source with (type unsafe) enums.
+  use   When decision is to be made on a limited (probably statically defined) number of strings,
+        aka (small) (programing) language parsing.
+
+ @sa util_demos.cpp:findIndex_demo()
 */
 
     inline void
-FindIndex( int *_NumberOfTextsIn_indexOut_, char const* _texts[], char const* _current)
+findIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
 {
-    while  ( ( --( *_NumberOfTextsIn_indexOut_ )>= 0 )&& strcmp( _texts[( *_NumberOfTextsIn_indexOut_ )], _current) );
+    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found hast to be on _texts[0]
+
+    register auto item_to_be_found= _texts[0];
+    while  ( strcmp( _texts[--( *_NumberOfItems_in_indexOut_ )], item_to_be_found ) );
+
+    ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
 }
-/*
-FastFindIndex is a bit smarter, it avoid a check per iteration, but it MUST find _current at index 0. See the example
-rewrite below to understand its use:
-
-Sample that can be copied as template to fill.
- ----------------------------------------------
- static const char* newSymbol_and_nonParenKeywords[]= {newSymbol, "try","do","switch","case","else"};
- int index= INTEMS_IN(newsym_and_nonParenKeywords)
- FastFindIndex( &index, newSymbol_and_nonParenKeywords);
- LOG_switch(index);
- switch ( index ) {
-     case  5: LOG_case("else");
-         ...
-         break;
-     case  4: LOG_case("case");
-         ...
-         break;
-     case  3: LOG_case("switch");
-         ...
-         break;
-     case  2: LOG_case("do");
-         ...
-         break;
-     case  1: LOG_case("try");
-         ...
-         break;
-     case  0: LOG_case("no matching keyword,  in fact match is self (newSymbol)");
-         ...
-
-     default: LOG_default("This should never happen, "
-           "check nonParenKeywords and their "
-           "indexes and the cases handled");
-         LOG_throw("came to switch default in .....");
-         throw ".ERROR: Came to switch default in ....";
-
-         Note: that the index numbers are different (+1), but we do not care aboute these intermediates.
-*/
-
-    inline void
-FastFindIndex( int *_NumberOfTextsIn_indexOut_, char const* _texts[])
-{
-    register auto current= _texts[0];
-    while  ( strcmp( _texts[--( *_NumberOfTextsIn_indexOut_ )], current ) );
-}
-
-//////////////////
 
 
 
