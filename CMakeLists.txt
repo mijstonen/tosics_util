@@ -1,5 +1,5 @@
 project(util)
 
-add_executable(util main.c)
+add_executable(demos util_demos.cpp)
 
-install(TARGETS util RUNTIME DESTINATION bin)
+install(TARGETS demos RUNTIME DESTINATION bin)
