@@ -1,4 +1,8 @@
-#include "preserve.hpp"   // other projects should refer to it as "util/preserve.hpp"
+
+//#include "utils.hpp"
+//#include "info.hpp"
+//#include "preserve.hpp"   // other projects should refer to it as "util/preserve.hpp"
+#include "error.hpp"
 
 void preserve_demo_0()
 {
@@ -175,15 +179,147 @@ void findIndex_demo()
     }
 }
 
+void info_demo()
+{
+  #if 1
+    // foo example
+    std::string aName="Hello";
+    int count=14;
+    unsigned long ulonghex=0xabcdef000000;
+    int *pcount= &count;
+    char control='Y';
+    char highCtrl= -40;        // test signed char conversion  ( 256 - 40 => 216 )
+    float Pi=3.14159265359;
+    bool b=false;
+
+
+    // Normally variables are used in the program
+    // but when executing this program in release mode
+    // the it would report 'unused variable ...'for each above.
+    // That is suppressed below by void expressions that use the variables.
+#   ifdef NDEBUG
+    (void)aName,(void)count,(void)ulonghex,(void)pcount,(void)control,(void)Pi;(void)highCtrl;(void)b;
+#   endif
+
+
+    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),VARCHRNUMHEX(highCtrl),VARVAL(b));
+
+    std::string alternative="Or write a ostream& operator << (ostream&,<your type>) operator for it.";
+
+    // no brainer on variadic arguments
+    INFO("Can put in","any value of any type",ENDL
+        ,"that is also accepted",ENDL
+        ,"by iostream.", alternative);
+
+
+    // but INFO puts a newline after every call (like echo)
+    INFO("INFO uses newer C++ techniques");
+    INFO("like variadic template function arguments");
+    INFO("and variadic macro argument lists");
+    INFO("To make its own syntax, almost");
+    INFO("trivial.");
+
+#ifndef NDEBUG
+    util::info( std::endl< char, std::char_traits<char> > );
+
+    util::info( "Call info directly", "with util::info()", std::endl< char, std::char_traits<char> >
+                , aName, count, pcount, control);
+#endif
+    INFO("Macro INFO is basically the the same but fades away in release mode ( defined(NDEBUG) )", ENDL );
+
+    INFO("With macros: Better format and consistent display of variable names.", ENDL,
+         VARVAL(aName),VARVAL(count),VARVAL(control));
+    INFO("PTR... macros print the address value of the pointer and the value on that address", ENDL,
+         PTRVALHEX(pcount),PTRVAL(pcount));
+    pcount= nullptr;
+    INFO("INFO handles NULL pointers (nullptr) well",PTRVAL(pcount));
+
+
+    INFO_TO(std::cerr);
+
+    INFO(VARVALHEX(ulonghex));
+    INFO("As number:  ", VARCHRNUM(control),
+         "    And same again as hex number:  ", VARCHRNUMHEX(control));
+    INFO("INFO produces raw output for intended debugging purposes ONLY without formatting.");
+    INFO("Like with:  ",VARVAL(Pi));
+    INFO("Its a drop-in replacer for 'printf' (or ostream cout, cerr)",ENDL,
+          "like debugging with the advantage", ENDL,
+          "of consistant variable name and variable value display");
+    INFO("It might improve the developers productivity");
+    INFO("Besides that, it is a risc free check on that C++11 compilation is enabled.");
+
+
+    char const* strContainsNewline{"Show here\nWhat happens if ""\\n"" is used directly"};
+
+    INFO(VARVAL(strContainsNewline));
+
+    //
+    // The target stream does not need to print to console or file. It can be something
+    // completely different. The example below uses a string stream together with INFO
+    // to create a query.
+    //
+
+    constexpr int key=12;
+    constexpr long double factor=100.0/7.0;
+
+    std::ostringstream Query1;
+    // write to Query
+    {
+      LOCAL_MODIFIED(INFO_STREAM_PTR);
+      INFO_TO(Query1);
+
+      INFO("select    *",ENDL
+          ,"  from    tX, tY",ENDL
+          ," where    tX.key=", key,ENDL
+          ,"   and    tY.fact< ", factor,ENDL
+          ," order by tX.at, tY.lo"
+          );
+    }
+
+    // show query string that was created
+    INFO(VARVAL(Query1.str()));
+
+    std::ostringstream Query2;
+    // write to Query
+    {
+      INFO2STREAM( Query2
+          ,"-- second --",ENDL
+          ,"select    *",ENDL
+          ,"  from    tX, tY",ENDL
+          ," where    tX.key=", key,ENDL
+          ,"   and    tY.fact< ", factor,ENDL
+          ," order by tX.at, tY.lo"
+          );
+    }
+
+    // show query string that was created
+    INFO(VARVAL(Query2.str()));
+
+#endif
+
+    float interest= 3.42;
+    long double Pii= 9978066541.0 / 3176117225;
+    float spi= 62103.0/19768.0;
+    double eenderde1= static_cast<double>(1.0/3.0);
+    float eenderde2= static_cast<float>(1.0/3.0);
+
+    CERROR(VARVAL(interest),ENDL,VARVAL(Pii),VARVAL(spi),ENDL,VARVAL(eenderde1),VARVAL(eenderde2));
+
+    INFO("Back on stdout");
+}
+
+
 
 int main(int , char **)
 {
+  #if 1
     printf("Util demos\n");
     preserve_demo_0();
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
     findIndex_demo();
-
+  #endif
+    info_demo();
     return 0;
 }

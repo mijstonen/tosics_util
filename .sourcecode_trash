@@ -144,3 +144,233 @@ if ( ... ) {
 
 #endif
 }
+{
+//:info
+/// Variadic template info() debugging helper
+inline void info()
+{
+    std::cout<< std::endl;
+}
+/// Variadic template info() debugging helper
+template<typename Last_T>
+void info(const Last_T& _last)
+{
+    std::cout<< _last;
+    info();
+}
+/// Variadic template info() debugging helper
+template<typename First_T, typename... Remaining_T>
+void info(const First_T& _first, const Remaining_T&... _remaining)
+{
+    std::cout<< _first<<' ';
+    info( _remaining...);
+}
+
+// enable/disable debug helper info()
+#if 1
+//:INFO
+/**
+ @brief enabled: Lets you quicky and systematically print variables. Better for debugging then standard printing.
+ @param ... expects any amount of objects that can be streamed to std::ostream.
+ @sa VARVAL() PTRVAL() VARVALHEX() VARCHRNUM() VARCHRHEXNUM()
+
+ \code INFO( a, b, c) \endcode
+ does the same as
+ \code std::cout << a << ' ' << b << ' ' << c << ' ' << std::endl \endcode
+ but with less typing. It is intended to be used with macro's VARVAL,PTRVAL...VARCHRHEXNUM as a low level and low entry
+ debugging aid. Those macro's make labels from the given variable and display the value (as of cout<< object standard
+ or self defined operator << ) in single quotes.
+
+ @b examples
+ \code
+ float my_value = 26.0; int div_num=5;
+
+ // simple INFO example
+ // -------------------
+ INFO("my value text is",my_value","devided by",divnum,"is",my_value/div_num);
+
+ // output "my value text is 26.000000 divided by 5 is 5.200000\n";
+
+ // INFO with VARVAL example
+ // ------------------------
+ INFO(VARVAL(my_value),"divided by",VARVAL(div_num),"is",VARVAL(my_value/div_num));
+ // produces
+ std::cout<<"my_value"<<"="<<' '<<''''<<my_value<<''''<<' '
+          <<"divided by"<<' '<<"div_num<<"="<<' '<<''''<<div_num<<''''<<' '
+          <<"is"<<' '
+          <<"my_value/div_num"<<' '<<''''<<my_value/div_num<<''''<<' '
+          <<std::endl;
+
+ // output: "my_value= '26.000000' divided by div_num= '5' is my_value/div_num= '5.200000' \n"
+
+
+ \endcode
+
+ @remarks INFO delibberately is designed to avoid custom formatting to keep it as simple as possible.
+          If really needed you can still do custom formatting for a certain type of object by defining a operator<< .
+          Or sometimes fall back to ordinary printing. Developers are in a hurry when debugging, they hate typing more
+          then stricktly required.
+
+
+*/
+# define INFO(...) util::info(__VA_ARGS__)
+#else
+/// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define INFO(...)
+#endif
+
+
+//:DBG_INFO
+#if DEBUG
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+# define DBG_INFO(...) INFO(__VA_ARGS__)
+#else
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define DBG_INFO(...)
+#endif
+
+#if ALLOC_DEBUG
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+# define ALDBG_INFO(...) INFO(__VA_ARGS__)
+#else
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define ALDBG_INFO(...)
+#endif
+
+
+//:cerror
+/** cerror works like info but sends the output to std::cerr
+ 'cerror' i.s.o. error because that is to common and could class
+ */
+/// Variadic template cerror() debugging helper
+inline void cerror()
+{
+    std::cerr<< std::endl;
+}
+/// Variadic template cerror() debugging helper
+template<typename Last_T>
+void cerror(const Last_T& _last)
+{
+    std::cerr<< _last;
+    cerror();
+}
+/// Variadic template cerror() debugging helper
+template<typename First_T, typename... Remaining_T>
+void cerror(const First_T& _first, const Remaining_T&... _remaining)
+{
+    std::cerr<< _first<<' ';
+    cerror( _remaining...);
+}
+
+
+//:CERROR
+// enable/disable debug helper info()
+#if 1
+/// enabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define CERROR(...) util::cerror(__VA_ARGS__)
+#else
+/// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define CERROR(...)
+#endif
+
+#if DEBUG
+/// DEBUG enabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define DBG_CERROR(...) CERROR(__VA_ARGS__)
+#else
+/// DEBUG disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define DBG_CERROR(...)
+#endif
+
+#if ALLOC_DEBUG
+/// ALLOC_DEBUG enabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define ALDBG_CERROR(...) CERROR(__VA_ARGS__)
+#else
+/// ALLOC_DEBUG disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define ALDBG_CERROR(...)
+#endif
+
+
+//:single_quote
+/**
+ @brief string representation of _value within single quotes and if hex is @b true
+        the value is presented hexadecimally
+
+ Used in 'See also' macro's
+
+ @param[in] _value the value to be represented
+ @param[in] hex is @b true the value is presented hexadecimally
+ @sa info INFO VARVAL PTRVAL VARVALHEX VARCHRNUM VARCHRHEXNUM
+
+ The mentioned macro's are all used to print variables systematically with the variable name as label and the value
+ within single quotes.
+
+ @b example
+ \code
+ int kaku=40;
+ string naid="name identifier";
+
+ INFO(VARVAL(kaku),VARVAL(naid));
+
+ // prints  kaku:'40'  naid:'name identifier'
+ \endcode
+
+ INFO can take any amount of comma separated objects to print as long the type of the object is streamable to
+ std::ostream
+
+ @return single quoted (hexadecimal) string representation of _value
+*/
+template<typename Value_T>
+std::string single_quote(const Value_T& _value, bool hex=false)
+{
+#if 0
+    static /*unfortunally static, due to MSVC*/ std::stringstream ss;
+    ss.seekp(0);
+    ss.seekg(0);
+#else
+    std::stringstream ss;
+#endif
+    //std::stringstream sl;
+    if ( hex ) ss<< std::hex;
+    ss<<'\''<<_value<<'\'';
+    if ( hex ) ss<< std::dec;
+    return std::move( ss.str());
+// Note: Which is correct? MSVC (appearently) passes the allocated buffer of the local stringstream,
+//       it is as if we (incorrectly) would pass the address of a local char buffer (and that is only
+//       valid if that buffer is static and not on the stack).
+//       But string should be treated a value object (likewise int, float,... and a copy operator makes
+//       a true copy of the chars in the buffer of the string object) and should be
+//       copied (or moved) as a hole object. So G++ (and CLANG++) got it right.
+//       This time ;-)
+}
+
+
+//:VARVAL
+/// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
+#define VARVAL(_v) #_v,":",util::single_quote(_v)
+
+
+//:PTRVAL
+/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
+#define PTRVAL(_p) #_p,":",util::single_quote(reinterpret_cast<const void*>(_p)),"->",util::single_quote(*_p)
+
+
+//:VARVALHEX
+/// as VARVAL but the value (if nummeric) is presented hexadecimally
+#define VARVALHEX(_v) #_v,":",util::single_quote(_v,/*hex=*/true)
+
+
+//:VARCHRNUM
+/** @brief byte specific VARVAL, represent byte as number not as character
+
+ (u)int8_t types tend to be printed as a character by the default type overloading.
+ By casting it to unsigned we select the number printing overload of ostream
+ */
+#define VARCHRNUM(_v)#_v,":",util::single_quote(CHAR2UINT_CAST(_v))
+
+
+//:VARCHRHEXNUM
+/// Like VARCHRNUM but the byte is hexadecimally formatted
+#define VARCHRHEXNUM(_v)#_v,":",util::single_quote(CHAR2UINT_CAST(_v),/*hex=*/true)
+}
