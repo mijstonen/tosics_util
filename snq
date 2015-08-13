@@ -1,0 +1,20 @@
+#!/bin/sh
+# Make a snapshot archive of qnode
+cd ~/Projects/Kdevelop
+mv util20[0-9][0-9]-*.txz ~/Archives/snapshots 2>/dev/null
+TAR_ARGS="-Jcv
+    --exclude-backups
+    --exclude=*~
+    --exclude=\#*
+    --exclude=*.gch
+    --exclude=*.txz
+    --exclude=util/.seqintra/logs/*
+
+    --exclude-vcs
+
+    -f util$(timestamp).txz util/
+" #TAR_ARGS
+
+tar $TAR_ARGS
+ls -l util20[0-9][0-9]-*.txz
+cd -
