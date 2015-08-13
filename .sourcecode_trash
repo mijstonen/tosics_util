@@ -1,0 +1,146 @@
+{
+#if 1
+
+//:preserve
+//IMPORTAND: this forward declaration is neccesary to make it work
+/// @sa util::preserve< Field_T, Remaining_T...>
+template <typename... List_T>
+struct preserve;
+/**
+ @brief use RAII to "preserve" data and automatically restore it at the end of the scope
+ @sa PRESERVING decltypes0 ... decltypes9
+
+ preserve offers a powerfull jet easy to use and safe programming interface to ensure that prior content of a object
+ which content will change in the scope - where the preserve object is used - will be restored when the scope is left
+ no matter how it is left ( return, exception e.g. ).
+
+ To preserve a single object a template pointer is required to remember the address of the object and a template object
+ to copy the original value. When leaving the scope the destructor of preserve restores the original value. By use of
+ C++11 variadic template argument techniques, any amount of multiple objects can be "preserved".
+
+ Macro PRESERVING encapsulates the declaration of preserve for further simplification.
+
+ @remark There are no methods to use. The constructors are encampsulated in PRESERVING and the destructors are called
+         automatically. So there is nothing to further document here (as we limit doxygen documentaion to  a need to
+         know - mainly "public" - area).
+ */
+template <typename Field_T,typename... Remaining_T>
+struct preserve<Field_T,Remaining_T...> : preserve<Remaining_T...>
+{
+    Field_T safed, *ptr_orinal;
+    // simple trasaction support (do not restore in destructor if '..commit()' is called
+    // bool rolledback
+
+    // provide modification visabillity ( take address of object at call )
+    inline
+    explicit preserve( Field_T* _fieldptr, Remaining_T*... _remaining)
+    : preserve<Remaining_T*...>(_remaining...)
+    , safed(*_fieldptr)
+    , ptr_orinal(_fieldptr)
+    // rollback(true)
+    {
+        //VARVAL(safed);
+    }
+
+
+//  NOTE: use of 1st constructor is recommended
+//        this is the backwards compatible constructor
+    inline
+    explicit preserve( Field_T& _field, Remaining_T&... _remaining)
+    : preserve<Remaining_T...>(_remaining...)
+    , safed(_field)
+    , ptr_orinal(&_field)
+    // rollback(true)
+    {
+        //VARVAL(safed);
+    }
+
+    inline
+    ~preserve()
+    {
+        // if (rolledback) {
+        ( *ptr_orinal )= safed;
+        //}
+
+        //VARVAL(safed);
+    }
+
+  private:
+    // prevent -Weffc++ , do not make a copy of instances of this class (because of pointer members), no need/purpose
+    //const util::preserve<bool>& (const util::preserve<bool>&) const
+    preserve(const preserve<bool>&)
+    {
+        Throw_Error_Break(std::runtime_error("util::preserve<...> objects should not be copied"));
+    }
+
+    //void commit(){  rolledback=fale; on_commit_event();}
+};
+
+/*last*/
+/// @sa util::preserve< Field_T, Remaining_T...>
+template <>
+struct preserve<>
+{
+#if 0
+    inline
+    preserve<>(){}
+
+    inline
+    ~preserve(){}
+#endif
+};
+
+//:NUMARGS
+/**
+ @brief determine number of arguments from a variadic macro
+ @remark NUMARGS cannot substitute static numbering
+ */
+#define NUMARGS(...)  (sizeof((int[]){__VA_ARGS__})/sizeof(int))
+
+//:decltypes0...9
+/// decltypes0...9 are helper macros for PRESERVE @sa PRESERVE
+#define decltypes0()
+/// @overload
+#define decltypes1(_1)                                decltype(_1)
+#define decltypes2(_1,_2)                             decltype(_1), decltypes1(_2)
+#define decltypes3(_1,_2,_3)                          decltype(_1), decltypes2(_2,_3)
+#define decltypes4(_1,_2,_3,_4)                       decltype(_1), decltypes3(_2,_3,_4)
+#define decltypes5(_1,_2,_3,_4,_5)                    decltype(_1), decltypes4(_2,_3,_4,_5)
+#define decltypes6(_1,_2,_3,_4,_5,_6)                 decltype(_1), decltypes5(_2,_3,_4,_5,_6)
+#define decltypes7(_1,_2,_3,_4,_5,_6,_7)              decltype(_1), decltypes6(_2,_3,_4,_5,_6,_7)
+#define decltypes8(_1,_2,_3,_4,_5,_6,_7,_8)           decltype(_1), decltypes7(_2,_3,_4,_5,_6,_7,_8)
+#define decltypes9(_1,_2,_3,_4,_5,_6,_7,_8,_9)        decltype(_1), decltypes8(_2,_3,_4,_5,_6,_7,_8,_9)
+
+//:PRESERVING
+/**
+ @brief preserving content of N object entities
+
+ @param [in] N number of objects to preserve
+ @param [in] in_local_preserveObject name of the 'preserve' object in the preserving scope
+ @param [in] ... variadic list of object intities whose content will be preserved
+
+@b example:
+\code
+int a=10;
+float e=-12.5;
+
+if ( ... ) {
+   PRESERVING( 2, till_scope_end  ,a,e);
+   a=20;
+   e=-33.33;
+   foo( a, e);
+}
+ // e== -12.5
+ // e== 10
+\endcode
+
+@remark It would be nice if N not needed to be specified but could be retrieved from the number of
+        enlisted object entities. NUMARGS seems to come close but can't be combined with decltypes0...9 .
+        Who knows a well working solution?
+*/
+
+//                                                          | list of types of objects  |                        | list of objects |
+#define PRESERVING( N, in_local_preserveObject,...) preserve< decltypes##N (__VA_ARGS__)> in_local_preserveObject(  __VA_ARGS__    )
+
+#endif
+}
