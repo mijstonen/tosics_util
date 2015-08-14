@@ -47,9 +47,9 @@ int __stateReport(  int _return_state_of_call_, char const* _callee, char const*
             // else values 0, 1, 2, 3 remain
     }
 # if SR_DEBUG
-    #define  STD_STATE_MSG CERROR(VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
+    #define  STD_STATE_MSG CERROR();CERROR("STATEREPORT>>>",VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
 # else
-    #define  STD_STATE_MSG CERROR(VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_caller))
+    #define  STD_STATE_MSG CERROR();CERROR("STATEREPORT>>>",VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_caller))
 # endif
     if ( ( _what& 0x1 )&& ( _return_state_of_call_>= 0  ) ) { // some other notification
         char const* kind="Unhandled NOTIFICATION";
@@ -139,7 +139,31 @@ int setFileSize( int _fd, size_t _size, bool _grow)
 ________________________________________________________________________________________________________________________
 */
 
+static thread_local InfoSettings StandardInfoSettings;
+InfoSettings *AppliedInfoSettingsPtr= &StandardInfoSettings;
 
+    int
+InfoSettings::validateFailed() const
+{
+    if ( ostreamPtr==nullptr ) {
+        return -1;
+    }
+    if ( objectSeparation==nullptr ) {
+        return -2;
+    }
+    if ( customQuote==nullptr ) {
+        return -3;
+    }
+
+    if ( strlen(objectSeparation)<1 ) {
+        return -21;
+    }
+    if ( strlen(customQuote)<1 ) {
+        return -22;
+    }
+
+    return 0;
+}
 
 }// namespace util
 

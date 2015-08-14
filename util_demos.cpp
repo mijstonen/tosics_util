@@ -181,6 +181,7 @@ void findIndex_demo()
 
 void info_demo()
 {
+    INFO("info demo");
   #if 1
     // foo example
     std::string aName="Hello";
@@ -202,7 +203,7 @@ void info_demo()
 #   endif
 
 
-    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),VARCHRNUMHEX(highCtrl),VARVAL(b));
+    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),VARCHRNUMHEX(highCtrl),VARVAL(b),123,0.123,!b);
 
     std::string alternative="Or write a ostream& operator << (ostream&,<your type>) operator for it.";
 
@@ -265,15 +266,51 @@ void info_demo()
     std::ostringstream Query1;
     // write to Query
     {
+    # if 0
+      // use (old style) macro encapsulation, certain extended settings are not supported
       LOCAL_MODIFIED(INFO_STREAM_PTR);
       INFO_TO(Query1);
+    # endif
 
-      INFO("select    *",ENDL
-          ,"  from    tX, tY",ENDL
-          ," where    tX.key=", key,ENDL
-          ,"   and    tY.fact< ", factor,ENDL
-          ," order by tX.at, tY.lo"
-          );
+    # if 0
+      // control all settings locally, usefull if there are mulitple collections of settings to be managed, future save when more settings are added.
+      LOCAL_MODIFIED(util::AppliedInfoSettingsPtr);
+      util::InfoSettings mySettings;
+      mySettings.ostreamPtr= &Query1;
+      mySettings.customQuote="\"";
+      util::AppliedInfoSettingsPtr= &mySettings;
+    # endif
+
+    # if 1
+      // Control settings that are changed, future save when more settings are added.
+      LOCAL_MODIFIED( util::AppliedInfoSettingsPtr->ostreamPtr
+                    , util::AppliedInfoSettingsPtr->customQuote
+                    );
+
+      # if 1
+      util::AppliedInfoSettingsPtr->ostreamPtr= &Query1;
+      # else
+      // deliberately corrupting to test/show STATEREPORT and validateFailed()
+      util::AppliedInfoSettingsPtr->ostreamPtr= nullptr;
+      # endif
+      # if 1
+      util::AppliedInfoSettingsPtr->customQuote="\"";
+      # else
+      // deliberately corrupting to test/show STATEREPORT and validateFailed()
+      util::AppliedInfoSettingsPtr->customQuote="";
+      # endif
+    # endif
+
+      // no need for handling the validateFailed() outcome, that is done by the STATEREPORT macro.
+      if ( !STATEREPORT(util::AppliedInfoSettingsPtr->validateFailed()) ) {
+
+          INFO("select    *"
+              ,"  from    tX, tY"
+              ," where    tX.key=", key
+              ,"   and    tY.fact< ", factor
+              ," order by tX.at, tY.lo"
+              );
+      }
     }
 
     // show query string that was created
@@ -283,7 +320,11 @@ void info_demo()
     // write to Query
     {
       INFO2STREAM( Query2
-          ,"-- second --",ENDL
+          ,"-- second, now acros multiple lines",ENDLINES(4)
+
+
+
+
           ,"select    *",ENDL
           ,"  from    tX, tY",ENDL
           ," where    tX.key=", key,ENDL
@@ -303,7 +344,9 @@ void info_demo()
     double eenderde1= static_cast<double>(1.0/3.0);
     float eenderde2= static_cast<float>(1.0/3.0);
 
-    CERROR(VARVAL(interest),ENDL,VARVAL(Pii),VARVAL(spi),ENDL,VARVAL(eenderde1),VARVAL(eenderde2));
+    INFO("direct floats",eenderde1,eenderde2);
+
+    CERROR("write to stderr",VARVAL(interest),ENDL,VARVAL(Pii),VARVAL(spi),ENDL,VARVAL(eenderde1),VARVAL(eenderde2));
 
     INFO("Back on stdout");
 }

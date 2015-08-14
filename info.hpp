@@ -3,36 +3,68 @@
 
 #  include "utils.hpp"
 
-#  define INFO_TO(TargetOstream_) util::Direct_info_to( & TargetOstream_ )
-#  define ENDL util::NextLine_tag()
-
+//@{
+/** @note None of the util functions below should be used directly!
+ * Use the macro's enlisted below (start reading about INFO)
+ */
 
 namespace util {
 
+  /// @brief Data or settings to support the INFO system, alling easy change and extension
+  class InfoSettings
+  {
+    public:
+      // { configurable
+      std::ostream* ostreamPtr= &std::cout;
+      const char* objectSeparation= " ";
+      const char* customQuote= "'";
+      // }
+      // work variable
+      short objOnLineCnt= 0;
+
+      /// @brief Perform some basic checks that ensure that following INFO will perform valid output.
+      /// @return 0 if all is OK, >0 OK but unusual, <0 if not OK to be used with STATEREPORT
+      int validateFailed() const;
+  };
+
+  extern InfoSettings *AppliedInfoSettingsPtr;  // implemented in utils.cpp
+
+//@{
+/// @brief Basic low level definitions
+
 // Explicitly defining how objects are separated can be used to customize
 // formatting and debugging the 'info' module.
-constexpr char const* ObjectSeparation=" ";
+    inline char const*
+ObjectSeparation()
+{
+    return AppliedInfoSettingsPtr->objectSeparation;
+}
 
-// To count objects that are printed on the same line. By function encapsulation
-// of the object we can have the counter in a header-only implementation. Generally
-// global (static) variables are bad. Here it is somewhat improved by use of
-// thread local storage. Also in forked processes and mpi based processes independed
-// (threat) processes do not effect each other. It would be better to store
-// context in a separate object and operate from there. That could be one of the
-// future directions of info.
+    inline char const*
+CustomQuote()
+{
+    return AppliedInfoSettingsPtr->customQuote;
+}
+
+/*
+ To count objects that are printed on the same line. By function encapsulation
+ of the object we can have the counter in a header-only implementation. Generally
+ global (static) variables are bad. Here it is somewhat improved by use of
+ thread local storage. Also in forked processes and mpi based processes independed
+ (threat) processes do not effect each other. It would be better to store
+ context in a separate object and operate from there. That could be one of the
+ future directions of info.
+*/
     inline short&
 ObjOnLineCntRef()
 {
-    static thread_local short ObjOnLineCnt=0;
-    return ObjOnLineCnt;
+    return AppliedInfoSettingsPtr->objOnLineCnt;
 }
 
     inline std::ostream*&
 OstreamPtrRef()
 {
-    static thread_local std::ostream*  osmptr= &std::cout;
-    static thread_local std::ostream*& OstreamPtr= osmptr;
-    return OstreamPtr;
+    return AppliedInfoSettingsPtr->ostreamPtr;
 }
 
     inline void
@@ -41,106 +73,84 @@ Direct_info_to( std::ostream* target_)
     OstreamPtrRef()= target_;
 }
 
-class NextLine_tag
+class NextLines
 {
-  // This type is to let specilized template function do_stream( NextLine_tag)
+  // This type is to let specilized template function do_stream( NextLines)
   // issue a newline. The postfix '_tag' indicates that this class is used only
   // as a type selection mechanism by the compiler.
-};
+  // see void do_stream( NextLines)
+  public:
+    short count=0;
 
+    NextLines(short _count=0)
+    : count(_count)
+    {}
+};
+//@}
 //______________________________________________________________________________
 
     template  <typename Object_T>
     inline void
-now_stream_object( Object_T const& _object)
+now_stream_object( std::ostream* os_ ,Object_T const& _object)
 {
-    ( *(OstreamPtrRef()) )<< _object;
+    ( *os_ )<< _object;
 }
 
+#if 1
+    template<>
+    inline void
+now_stream_object<bool>( std::ostream* os_ , bool  const& _object)
+{
+  now_stream_object( os_, ( _object?"true":"false" ));
+}
+#endif
 
-// specialize for floating point types because they need to presented with the correct precision
+//@{
+/// @brief Specialize for floating point types because they need to presented with the correct precision.
     template  <typename Object_T>
     inline void
 now_stream_object_fp( std::ostream* os_ , Object_T const& _object)
 {
-    (*os_) <<std::setprecision( std::numeric_limits<Object_T>::max_digits10) << "\'"<< _object << "\'";
+    (*os_) <<std::setprecision( std::numeric_limits<Object_T>::max_digits10) << _object;
 }
 
     template<>
     inline void
-now_stream_object<float>( float const& _object)
+now_stream_object<float>( std::ostream* os_ , float const& _object)
 {
-  now_stream_object_fp( OstreamPtrRef(), _object);
+  now_stream_object_fp( os_, _object);
 }
     template<>
     inline void
-now_stream_object<double>( double const& _object)
+now_stream_object<double>( std::ostream* os_ , double const& _object)
 {
-  now_stream_object_fp( OstreamPtrRef(), _object);
+  now_stream_object_fp( os_, _object);
 }
     template<>
     inline void
-now_stream_object<long double>( long double  const& _object)
+now_stream_object<long double>( std::ostream* os_ , long double  const& _object)
 {
-  now_stream_object_fp( OstreamPtrRef(), _object);
+  now_stream_object_fp( os_, _object);
 }
 
+//@}
 //______________________________________________________________________________
+//@{
 
     template<typename Value_T>
     inline std::string
-single_quote( Value_T const& _value)
-{
-    std::stringstream ss;
-    ss << "\'"<< _value<< "\'";
-    return std::move( ss.str());
-}
-    template<>
-    inline std::string
-single_quote( float const& _value)
-{
-    std::stringstream ss;
-    now_stream_object_fp( &ss, _value);
-    return std::move( ss.str());
-}
-    template<>
-    inline std::string
-single_quote( double const& _value)
-{
-    std::stringstream ss;
-    now_stream_object_fp( &ss, _value);
-    return std::move( ss.str());
-}
-    template<>
-    inline std::string
-single_quote( long double const& _value)
-{
-    std::stringstream ss;
-    now_stream_object_fp( &ss, _value);
-    return std::move( ss.str());
-}
-    template<typename Value_T>
-    inline std::string
-single_quote( Value_T const& _value, bool hex)
+custom_quote( Value_T const& _value, bool hex=false)
 {
     std::stringstream ss;
 
-    if ( hex ) {
-        ss << "\'0x"<< std::hex<< _value<< std::dec<< "\'";
-    }
-    else {
-        ss << "\'"<< _value<< "\'";
-    }
+    ss << CustomQuote();
+    if (hex) ss<< "0x"<< std::hex;
+    now_stream_object( &ss, _value);
+    if (hex) ss<< std::dec;
+    ss << CustomQuote();
     return std::move( ss.str());
 }
-    template<>
-    inline std::string
-single_quote( bool const& _value)
-{
-    std::stringstream ss;
-   ss << '\'' << (_value?"true":"false") << "\'";
-    return std::move( ss.str());
-}
+
 //______________________________________________________________________________
 
 // Only the do_stream() template function accesses the stream object (in this
@@ -152,22 +162,30 @@ single_quote( bool const& _value)
 do_stream( Object_T const& _object)
 {
     if ( ObjOnLineCntRef() >= 1 ) {
-        ( *(OstreamPtrRef()) )<< ObjectSeparation;
+        ( *(OstreamPtrRef()) )<< ObjectSeparation();
     }
     ++(ObjOnLineCntRef());
-    now_stream_object<Object_T>( _object);
+    now_stream_object<Object_T>( OstreamPtrRef(), _object);
 }
     template <>
     inline
-void do_stream( NextLine_tag const& /*_unused*/)
+void do_stream( NextLines const& _nextlines)
 {
     ObjOnLineCntRef()=0;
-    ( *(OstreamPtrRef()) )<< std::endl;
+
+    for( auto nextlines= _nextlines.count; nextlines>= 0; --nextlines ) {
+#   if 0
+        ( *(OstreamPtrRef()) )<< std::endl;    // flushes buffer
+#   else
+        (*OstreamPtrRef())<<'\n';              // does (possibly) not flush buffer
+#   endif
+    }//for
 }
     inline void
 info()
 {
-    do_stream( ENDL);
+    ObjOnLineCntRef()=0;
+    ( *(OstreamPtrRef()) )<< std::endl;    // flushes buffer
 }
     template<typename Last_T>
     inline void
@@ -186,7 +204,81 @@ info( First_T const& _first, Remaining_T const&... _remaining)
 
 
 }// namespace util
+//@}
 
+//:INFO_TO
+/// @brief redirect INFO to other stream
+#  define INFO_TO(TargetOstream_) util::Direct_info_to( & TargetOstream_ )
+
+//:ENDL
+/// @brief issue newline and flush (aka << std::endl)
+#  define ENDL util::NextLines(0)
+
+//:ENDLINES
+/// @brief issue newline and flush (aka << std::endl)
+#  define ENDLINES(extra_newlines) util::NextLines(extra_newlines)
+
+
+//:INFO_STREAM_PTR
+#  define INFO_STREAM_PTR (util::OstreamPtrRef())
+
+
+//@{
+/**
+ * @brief custom formatters that display the symbol or expression allong with the value.
+ */
+//:VARVAL
+/// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
+#  define VARVAL(_v) #_v"=",util::custom_quote(_v)
+
+//:VARVALHEX
+/// as VARVAL but the value (if nummeric) is presented hexadecimally
+#  define VARVALHEX(_v)  #_v"=",util::custom_quote(_v,/*hex=*/true)
+
+//:PTRVAL
+/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
+#  define PTRVAL(_p) #_p"=",util::custom_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::custom_quote(*_p):"(nullptr)")
+
+//:PTRVALHEX
+/// As PTRVAL but the pointed value is represented exadecimal
+#  define PTRVALHEX(_p) #_p"=",util::custom_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::custom_quote(*_p,/*hex=*/true):"(nullptr)")
+
+//:VARCHRNUM
+/** @brief byte specific VARVAL, represent byte as number not as character
+
+ (u)int8_t types tend to be printed as a character by the default type overloading.
+ By casting it to unsigned we select the number printing overload of ostream
+ */
+#  define VARCHRNUM(_v) #_v"=",util::custom_quote(CHAR2UINT_CAST(_v))
+
+//:VARCHRHEXNUM
+/// Like VARCHRNUM but the byte is hexadecimally formatted
+#  define VARCHRNUMHEX(_v) #_v"=",util::custom_quote(CHAR2UINT_CAST(_v),/*hex=*/true)
+//@}
+
+
+//@{
+/// @brief macros debending on preprocessor definitions DEBUG and ALLOC_DEBUG
+
+//:DBG_INFO
+#  if DEBUG
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+#    define DBG_INFO(...) INFO(__VA_ARGS__)
+#  else
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+#    define DBG_INFO(...)
+#  endif
+
+#  if ALLOC_DEBUG
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+#    define ALDBG_INFO(...) INFO(__VA_ARGS__)
+#  else
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+#    define ALDBG_INFO(...)
+#  endif
+//@}
 
 //:INFO
 /**
@@ -197,7 +289,7 @@ info( First_T const& _first, Remaining_T const&... _remaining)
  \code INFO( a, b, c) \endcode
  does the same as
  \code std::cout << a << ' ' << b << ' ' << c << ' ' << std::endl \endcode
- but with less typing. It is intended to be used with macro's VARVAL,PTRVAL...VARCHRHEXNUM as a low level and low entry
+ but with less typing. It is intended to be used with macro's aka VARVAL,PTRVAL... as a low level and low entry
  debugging aid. Those macro's make labels from the given variable and display the value (as of cout<< object standard
  or self defined operator << ) in single quotes.
 
@@ -221,17 +313,17 @@ info( First_T const& _first, Remaining_T const&... _remaining)
           <<"my_value/div_num"<<' '<<''''<<my_value/div_num<<''''<<' '
           <<std::endl;
 
- // output: "my_value= '26.000000' divided by div_num= '5' is my_value/div_num= '5.200000' \n"
+ // output: "my_value= '26.000000' divided by div_num= '5' is my_value/div_num= '5.200000'\n"
 
 
  \endcode
 
  @remarks INFO delibberately is designed to avoid custom formatting to keep it as simple as possible.
           If really needed you can still do custom formatting for a certain type of object by defining a operator<< .
-          Or sometimes fall back to ordinary printing. Developers are in a hurry when debugging, they hate typing more
-          then stricktly required.
-
-
+          Or sometimes fall back to ordinary printing.
+          Developers are in a hurry when debugging, they hate typing more then stricktly required, they should choose
+          INFO to display variables e.t.c. i.s.o. plain printf or cout<< . The other application is to fabricate
+          strings for embedded languages (aka a specific interpreter, html or embedded (dynamic) sql).
 */
 #  if 1
 #     define INFO(...) util::info(__VA_ARGS__)
@@ -240,61 +332,6 @@ info( First_T const& _first, Remaining_T const&... _remaining)
 # define INFO(...)
 #  endif
 
-
-//:DBG_INFO
-#  if DEBUG
-/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-/// @sa INFO
-#    define DBG_INFO(...) INFO(__VA_ARGS__)
-#  else
-/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-#    define DBG_INFO(...)
-#  endif
-
-#  if ALLOC_DEBUG
-/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-/// @sa INFO
-#    define ALDBG_INFO(...) INFO(__VA_ARGS__)
-#  else
-/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-#    define ALDBG_INFO(...)
-#  endif
-
-
-
-
-
-//:VARVAL
-/// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
-#  define VARVAL(_v) #_v"=",util::single_quote(_v)
-
-//:VARVALHEX
-/// as VARVAL but the value (if nummeric) is presented hexadecimally
-#  define VARVALHEX(_v)  #_v"=",util::single_quote(_v,/*hex=*/true)
-
-//:PTRVAL
-/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
-#  define PTRVAL(_p) #_p"=",util::single_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::single_quote(*_p):"(nullptr)")
-
-//:PTRVALHEX
-/// As PTRVAL but the pointed value is represented exadecimal
-#  define PTRVALHEX(_p) #_p"=",util::single_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::single_quote(*_p,/*hex=*/true):"(nullptr)")
-
-
-//:VARCHRNUM
-/** @brief byte specific VARVAL, represent byte as number not as character
-
- (u)int8_t types tend to be printed as a character by the default type overloading.
- By casting it to unsigned we select the number printing overload of ostream
- */
-#  define VARCHRNUM(_v) #_v"=",util::single_quote(CHAR2UINT_CAST(_v))
-
-
-//:VARCHRHEXNUM
-/// Like VARCHRNUM but the byte is hexadecimally formatted
-#  define VARCHRNUMHEX(_v) #_v"=",util::single_quote(CHAR2UINT_CAST(_v),/*hex=*/true)
-
-#define INFO_STREAM_PTR (util::OstreamPtrRef())
 
 #endif // INFO_HPP_ 1
 
