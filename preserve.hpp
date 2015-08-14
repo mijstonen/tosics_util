@@ -147,6 +147,7 @@ template <typename... T>  class preserve<T...> make_preserve(T&... refs)
 #define LOCAL_MODIFIED_OBJECTS __anonymous__PreserveInstance__
 
 /// @brief Users (by default) should use this macro, see preserve demos 1 and 2 in util_demos.cpp
+/// @remark Should only used once in a compund statement, alternatively use PRESERVE_IN
 #define LOCAL_MODIFIED(...) PRESERVE_IN(LOCAL_MODIFIED_OBJECTS,__VA_ARGS__)
 
 
