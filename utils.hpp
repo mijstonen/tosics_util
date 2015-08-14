@@ -389,19 +389,8 @@ void Throw_Error_Break(const Exception_T& _e)
 // end property setter and getters
 //______________________________________________________________________________________________________________________
 
-
-// Not documented, possibly removed in future, helpfull for C++11 beginners but offers to much hiding
-/// @cond FUTURE_STAY   exclude from doxygen documentation but remain active usable in source
-#define  DELETE_COPY_CONSTRUCTUR(ClassType)    ClassType(const ClassType&) = delete
-#define DEFAULT_COPY_CONSTRUCTUR(ClassType)    ClassType(const ClassType&) = default
-#define  DELETE_DESTRUCTOR(ClassType)          ~ClassType()                 = delete
-#define DEFAULT_DESTRUCTOR(ClassType)          ~ClassType()                 = default
-#define  DELETE_ASSIGNMENT_OPERATOR(ClassType) ClassType& operator =(const ClassType&)  = delete
-#define DEFAULT_ASSIGNMENT_OPERATOR(ClassType) ClassType& operator =(const ClassType&)  = default
-#define  DELETE_MOVE_OPERATOR(ClassType)       ClassType& operator =(const ClassType&&) = delete
-#define DEFAULT_MOVE_CONSTRUCTUR(ClassType)    ClassType& operator =(const ClassType&&) = default
-/// @endcond
-
+//______________________________________________________________________________________________________________________
+//{
 //:STATEREPORT
 /**
  \def STATEREPORT
@@ -707,7 +696,7 @@ int inline __stateReport(  int _return_state_of_call_, char const* _callee, char
 # define STATEREPORT(_CALL,...) _CALL
 #endif // SR_ENABLE
 
-
+//}_____________________________________________________________________________________________________________________
 
 
 /**

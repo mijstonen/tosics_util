@@ -199,7 +199,14 @@ void info_demo()
     // the it would report 'unused variable ...'for each above.
     // That is suppressed below by void expressions that use the variables.
 #   ifdef NDEBUG
-    (void)aName,(void)count,(void)ulonghex,(void)pcount,(void)control,(void)Pi;(void)highCtrl;(void)b;
+    FAKE_USE(aName);
+    FAKE_USE(count);
+    FAKE_USE(ulonghex);
+    FAKE_USE(pcount);
+    FAKE_USE(control);
+    FAKE_USE(Pi);
+    FAKE_USE(highCtrl);
+    FAKE_USE(b);
 #   endif
 
 
