@@ -355,6 +355,17 @@ void info_demo()
 
 void STATEREPORT_demo()
 {
+  {// extra local body
+    #if 1
+    LOCAL_MODIFIED(util::stateReport_StreamPtr);
+    std::ofstream myStateReports("statereport.txt");
+    ASSERT(myStateReports);                               // created stream must be valid to continue
+    util::stateReport_StreamPtr= &myStateReports;
+    // OR
+    //auto originalStreamPtr= util::stateReport_exchange_StreamPtr(&myStateReports);
+    #endif
+
+
   //{ notice that 0 is ignored
     INFO(ENDL,"silent");
     int silent='q'; /* 'q' or 'Q' or 0 */
@@ -374,7 +385,7 @@ void STATEREPORT_demo()
         INFO(VARVAL(STATEREPORT(function_return_value,error)));
     }
 
-    INFO(ENDL,"all");
+    INFO(ENDL,"all, except 0");
     int all='A'; /* 'a' or 'A' or 3 */
     for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
         INFO(VARVAL(STATEREPORT(function_return_value,all)));
@@ -389,7 +400,7 @@ void STATEREPORT_demo()
   //{ selective reporting
     INFO(ENDL,"typical use");
     for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
-        auto STATEREPORT_function_return_value= STATEREPORT(function_return_value,SR_EXCLUDE_0_AND(-2,1,3),'a');
+        auto STATEREPORT_function_return_value= STATEREPORT(function_return_value,SR_EXCLUDE_0_AND(-2,1,3));  // _what is not specified, it defaults to 3 (same as 'a' or 'A')
         INFO(VARVAL(STATEREPORT_function_return_value));
         switch ( STATEREPORT_function_return_value ) {
             case -2:
@@ -397,11 +408,11 @@ void STATEREPORT_demo()
                 break;
 
             case 1:
-                INFO("case -2 handled");
+                INFO("case 1 handled");
                 break;
 
             case 3:
-                INFO("case -2 handled");
+                INFO("case 3 handled");
                 break;
 
             default:
@@ -409,7 +420,19 @@ void STATEREPORT_demo()
         }
     }
   //} selective reporting
+     //util::stateReport_exchange_StreamPtr(originalStreamPtr);
+  }// extra local body
 
+    // And now the stateReport_streamPtr is back
+    auto theEnd=[&]()
+    {
+      return -2;
+      //return 0;
+    };
+    // if no STATEREPORT is issued when calling (lambda) function theEnd()
+    if ( !STATEREPORT(theEnd()) ) {
+      INFO("theEnd() returned 0, meaning: it succeed.");
+    }
 }
 
 int main(int , char **)

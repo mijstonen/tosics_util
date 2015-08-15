@@ -11,7 +11,22 @@ namespace util {
 ________________________________________________________________________________________________________________________
 delegated from STATEREPORT macro, see its description in utils.h
 */
+
 #if SR_ENABLE
+
+thread_local std::ostream* stateReport_StreamPtr= &std::cerr;
+
+#if 1
+std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPtr)
+{
+    std::ostream* return_value= stateReport_StreamPtr;
+    if ( _stateReport_StreamPtr ) {
+        stateReport_StreamPtr= _stateReport_StreamPtr;
+    }
+    return return_value;
+}
+#endif
+
 # if SR_DEBUG
 int __stateReport(  int _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller, std::vector<int> const& _exclusionsVector, int _what)
 # else // release hides location information
@@ -65,12 +80,14 @@ int __stateReport(  int _return_state_of_call_, char const* _callee, char const*
         }
     }
     if ( mode ) {
-        CERROR();
+        LOCAL_MODIFIED(INFO_STREAM_PTR);
+        INFO_TO(*stateReport_StreamPtr);
+        INFO();
 #define returning _return_state_of_call_
 # if SR_DEBUG
-        CERROR("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
+        INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
 # else
-        CERROR("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_caller))
+        INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_caller))
 # endif
         ;
 #undef returning

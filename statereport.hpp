@@ -309,6 +309,28 @@ int inline __stateReport(  int _return_state_of_call_, char const* _callee, char
 }
 #      define STATEREPORT(_CALL,...) util::__stateReport(_CALL, #_CALL, __PRETTY_FUNCTION__,##__VA_ARGS__)
 #    endif // SR_DEBUG
+
+/** @brief Set, get, or exchange the stream pointer to the stream that is used during STATEREPORT
+ *  @param _stateReport_StreamPtr New stream pointer (aka &std::cout or &my_file_stream)
+ *         If _stateReport_StreamPtr==nullptr  it will not alter the existing stream pointer, see return value.
+ * @return Returns the stream pointer before it was altered. If _stateReport_StreamPtr==nullptr, this function
+ *         can be used to get the stream pointer without setting another.
+ *
+ * STATEREPORT has its sole purpose during development. When the application is in production, it should still check
+ * but it is by then expected that the checks always pass. However if that is not the case a enduser could be
+ * disturbed by messages that where not intended for him. To avoid this problem, this function can redirect the
+ * STATEREPORT messaages to another stream, aka a logfile or a dead null stream. By default STATEREPORT reports to
+ * the standard error stream.
+ *
+ * @remark This function does not create a stream. The creation of a alternate stream is left to the user application
+ *         because other operations to that same stream could be applied.
+ * @remark Usually the state report stream pointer should only be set once in program and restoring should not be
+ *         needed. However is modify locally, the LOCAL_MODIFIED macro provides eleganter method to temporarely alter
+ *         the stream pointer (as shown in the demo).
+*/
+extern thread_local std::ostream* stateReport_StreamPtr;
+
+std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPtr=nullptr);
 #  else // no SR_ENABLE
 #    define STATEREPORT(_CALL,...) _CALL
 #  endif // SR_ENABLE
