@@ -1,8 +1,9 @@
-
 //#include "utils.hpp"
 //#include "info.hpp"
-//#include "preserve.hpp"   // other projects should refer to it as "util/preserve.hpp"
-#include "error.hpp"
+//#include "preserve.hpp"
+//#include "error.hpp"
+#include "statereport.hpp"
+
 
 void preserve_demo_0()
 {
@@ -199,14 +200,8 @@ void info_demo()
     // the it would report 'unused variable ...'for each above.
     // That is suppressed below by void expressions that use the variables.
 #   ifdef NDEBUG
-    FAKE_USE(aName);
-    FAKE_USE(count);
-    FAKE_USE(ulonghex);
-    FAKE_USE(pcount);
-    FAKE_USE(control);
-    FAKE_USE(Pi);
-    FAKE_USE(highCtrl);
-    FAKE_USE(b);
+    FAKE_USE(aName);    FAKE_USE(count);    FAKE_USE(ulonghex);    FAKE_USE(pcount);
+    FAKE_USE(control);  FAKE_USE(Pi);       FAKE_USE(highCtrl);    FAKE_USE(b);
 #   endif
 
 
@@ -358,18 +353,76 @@ void info_demo()
     INFO("Back on stdout");
 }
 
+void STATEREPORT_demo()
+{
+  //{ notice that 0 is ignored
+    INFO(ENDL,"silent");
+    int silent='q'; /* 'q' or 'Q' or 0 */
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        INFO(VARVAL(STATEREPORT(function_return_value,silent)));
+    }
 
+    INFO(ENDL,"notify");
+    int notify='N'; /* 'n' or 'N' or 1 */
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        INFO(VARVAL(STATEREPORT(function_return_value,notify)));
+    }
+
+    INFO(ENDL,"error");
+    int error='2'; /* 'e' or 'E' or 2 */
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        INFO(VARVAL(STATEREPORT(function_return_value,error)));
+    }
+
+    INFO(ENDL,"all");
+    int all='A'; /* 'a' or 'A' or 3 */
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        INFO(VARVAL(STATEREPORT(function_return_value,all)));
+    }
+  //} notice that 0 is ignored
+  //{ to not ignore 0, pass a empty exclusion list
+    INFO(ENDL,"all, including 0");
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        INFO(VARVAL(STATEREPORT(function_return_value,SR_EXCLUDE_ALL(),'n')));
+    }
+  //} to not ignore 0
+  //{ selective reporting
+    INFO(ENDL,"typical use");
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+        auto STATEREPORT_function_return_value= STATEREPORT(function_return_value,SR_EXCLUDE_0_AND(-2,1,3),'a');
+        INFO(VARVAL(STATEREPORT_function_return_value));
+        switch ( STATEREPORT_function_return_value ) {
+            case -2:
+                INFO("case -2 handled");
+                break;
+
+            case 1:
+                INFO("case -2 handled");
+                break;
+
+            case 3:
+                INFO("case -2 handled");
+                break;
+
+            default:
+                INFO("Same ",VARVAL(STATEREPORT_function_return_value)," take proper action");
+        }
+    }
+  //} selective reporting
+
+}
 
 int main(int , char **)
 {
-  #if 1
+  #if 0
     printf("Util demos\n");
     preserve_demo_0();
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
     findIndex_demo();
-  #endif
     info_demo();
+  #endif
+    STATEREPORT_demo();
     return 0;
 }

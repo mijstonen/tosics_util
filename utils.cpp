@@ -1,7 +1,8 @@
 //#include "utils.hpp"
 //#include "info.hpp"
 //#include "preserve.hpp"
-#include "error.hpp"
+//#include "error.hpp"
+#include "statereport.hpp"
 
 
 namespace util {
@@ -17,10 +18,12 @@ int __stateReport(  int _return_state_of_call_, char const* _callee, char const*
 int __stateReport(  int _return_state_of_call_, char const* _callee, char const* _caller, std::vector<int> const& _exclusionsVector, int _what)
 # endif // SR_DEBUG
 {
-#if 0
-    if  ( !_return_state_of_call_ )                                          goto LB_REPORT_SKIPPED;  // Ok
-    for ( auto ve : _exclusionsVector )   if ( ve== _return_state_of_call_ ) goto LB_REPORT_SKIPPED;  // Handled in caller
-#else
+    short mode=0;
+    char const* kind[]{ ""
+                      , "ERROR"
+                      , "NOTIFICATION"
+                      , "ZERO/FALSE"
+                      };
     // No special treatment when _return_state_of_call_ 0, instead by default the _exclusionsVector is not empty,
     // but contains int(0). Therefor its use is going in cases where the _exclusionsVector is exclusive.
     // The objective is to be able to also consider 0 as a unexpected state (fa. only positieve values allowed)
@@ -29,15 +32,14 @@ int __stateReport(  int _return_state_of_call_, char const* _callee, char const*
             goto LB_REPORT_SKIPPED;  // Handled in caller
         }
     }
-#endif
 
     // translate option character
     switch ( (static_cast<char>(tolower( _what))) )
     {
         // cases in order of (estimated) probabillity
         case 'a': _what=3; break;  // All
-        case 'e': _what=2; break;  // Error
-        case 'n': _what=1; break;  // Notify
+        case 'e': _what=2; break;  // Error and zero
+        case 'n': _what=1; break;  // Notify and zero
         case 'q': _what=0; break;  // be Quiet
         default:
             // heal some other error prone value (better then reporting error in error handling)
@@ -46,20 +48,33 @@ int __stateReport(  int _return_state_of_call_, char const* _callee, char const*
             }
             // else values 0, 1, 2, 3 remain
     }
+    if ( _return_state_of_call_< 0 ) {
+        if ( _what& 0x2 ) {
+            mode=1;
+        }
+    }
+    else if (_return_state_of_call_> 0 ) {
+        if ( _what& 0x1 ) {
+            mode=2;
+        }
+    }
+    else {
+        assert( _return_state_of_call_==0 );                // Precondition that shall be met
+        if ( _what ) {
+            mode=3;
+        }
+    }
+    if ( mode ) {
+        CERROR();
+#define returning _return_state_of_call_
 # if SR_DEBUG
-    #define  STD_STATE_MSG CERROR();CERROR("STATEREPORT>>>",VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
+        CERROR("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_file),VARVAL(_line),VARVAL(_caller))
 # else
-    #define  STD_STATE_MSG CERROR();CERROR("STATEREPORT>>>",VARVAL(kind),VARVAL(_return_state_of_call_),VARVAL(_callee),VARVAL(_caller))
+        CERROR("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(_callee),VARVAL(_caller))
 # endif
-    if ( ( _what& 0x1 )&& ( _return_state_of_call_>= 0  ) ) { // some other notification
-        char const* kind="Unhandled NOTIFICATION";
-        STD_STATE_MSG;
+        ;
+#undef returning
     }
-    if ( ( _what& 0x2 )&& ( _return_state_of_call_< 0 ) ) { // error
-        char const* kind="Unhandled ERROR";
-        STD_STATE_MSG;
-    }
-
     LB_REPORT_SKIPPED:
     return _return_state_of_call_;
 }//__stateReport()
