@@ -74,6 +74,8 @@ class preserve_base
             LOCAL_MODIFIED
 
   @remark  To use it '#include <util/preserve.cpp>'
+  @remark  Be cautios when applying LOCAL_MODIED or PRESERVE_IN macros to global variables in combination with threads.
+           It is safer to use thread_local variables and apply to them.
  */
 template<typename T, typename... UVW>
 class preserve<T,UVW...> : public preserve<UVW...>
