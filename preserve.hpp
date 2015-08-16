@@ -4,6 +4,9 @@
 //#include "utils.hpp"
 #include "info.hpp"
 
+#define PRESERVE_ADVANCED 1
+
+
 namespace util {
 
 //IMPORTAND: this forward declaration is neccesary to make it work
@@ -19,6 +22,19 @@ class preserve_base
   private:
     bool m_restore=true;
 
+#if PRESERVE_ADVANCED
+    std::function<void(preserve_base*)> m_onBeforeRestore = [&](preserve_base*){}; // dummy lambda
+    bool m_should_call_onBeforeRestore=false;
+
+  protected:
+    void maybe_run_onBeforeRestore()
+    {
+        if ( !m_should_call_onBeforeRestore ) {
+             return;
+        }
+        m_onBeforeRestore(this);
+    }
+#endif
 
   public:
 
@@ -42,16 +58,47 @@ class preserve_base
 
 
     /// @brief Get restore property.
-    bool restore() const
+    decltype(m_restore) restore() const
     {
         return m_restore;
     }
 
     /// @brief Set restore property. If set to false, the preserved objects will not be restored
-    void restore(const bool& _restore)
+    void restore(const decltype(m_restore)& _restore)
     {
         m_restore= _restore;
     }
+
+
+#if PRESERVE_ADVANCED
+    /// @brief set handler (lambda) that is fired just before start restoring values
+    void onBeforeRestore(const decltype(m_onBeforeRestore)& _onBeforeRestore)
+    {
+        m_onBeforeRestore= _onBeforeRestore;
+        should_call_onBeforeRestore(true);
+    }
+
+
+    #if 0
+    decltype(m_onBeforeRestore) onBeforeRestore() const
+    {
+        return m_onBeforeRestore;
+    }
+    #endif
+
+
+    /// @brief Set should_call_onBeforeRestore property
+    void should_call_onBeforeRestore(const decltype(m_should_call_onBeforeRestore)& _should_call_onBeforeRestore)
+    {
+        m_should_call_onBeforeRestore= _should_call_onBeforeRestore;
+    }
+
+    /// @brief Get should_call_onBeforeRestore property
+    decltype(m_should_call_onBeforeRestore) should_call_onBeforeRestore() const
+    {
+        return m_should_call_onBeforeRestore;
+    }
+#endif
 
 };
 
@@ -102,6 +149,9 @@ class preserve<T,UVW...> : public preserve<UVW...>
 
     ~preserve()
     {
+#if PRESERVE_ADVANCED
+        preserve_base::maybe_run_onBeforeRestore();
+#endif
         if ( preserve_base::restore() ) {
             r= v;
         }
@@ -151,6 +201,5 @@ template <typename... T>  class preserve<T...> make_preserve(T&... refs)
 /// @brief Users (by default) should use this macro, see preserve demos 1 and 2 in util_demos.cpp
 /// @remark Should only used once in a compund statement, alternatively use PRESERVE_IN
 #define LOCAL_MODIFIED(...) PRESERVE_IN(LOCAL_MODIFIED_OBJECTS,__VA_ARGS__)
-
 
 #endif // PRESERVE_HPP_

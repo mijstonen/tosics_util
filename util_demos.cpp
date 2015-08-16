@@ -8,11 +8,18 @@
 void preserve_demo_0()
 {
   INFO("\npreserve_demo 0 for debugging");
-  int i=5;
-  { PRESERVE_IN(instance, i);  // basic declaring macro with explist name of util::preserve<...> object (aka instance)
+  int i=5, j=20,k=21,l=22;
+  { PRESERVE_IN(instance, i,j,k,l);  // basic declaring macro with explist name of util::preserve<...> object (aka instance)
     i=9;
     std::cout<<i<<std::endl;
-    instance.restore(false);
+    //instance.restore(false);
+#if PRESERVE_ADVANCED
+    instance.
+        onBeforeRestore([&](util::preserve_base* _context_) {
+            INFO(VARVAL(i),VARVAL(j),VARVAL(k),VARVAL(l),VARVAL(_context_->restore()));
+            _context_->should_call_onBeforeRestore(false);
+        });
+#endif
   }
   std::cout<<i<<std::endl;
 }
@@ -27,13 +34,29 @@ void preserve_demo_1()
     std::string name("Michel");
     INFO("intial:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
 
-  { LOCAL_MODIFIED(a,d,pa,name);
 
-    INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.restore()));
-    // Modify
-    d=456;  a=2;  pa= &b;  name="Peter";
-    INFO("modified:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
-  }
+    try {
+        LOCAL_MODIFIED(a,d,pa,name);
+#if PRESERVE_ADVANCED
+        // Do something before restoring in case the body is left by some reason
+        LOCAL_MODIFIED_OBJECTS.
+            onBeforeRestore([&](util::preserve_base* _context_)
+                {
+
+                    INFO("before restoring:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
+                    _context_->should_call_onBeforeRestore(false);
+                });
+#endif
+      INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.restore()));
+      // Modify
+      d=456;  a=2;  pa= &b;  name="Peter";
+      INFO("modified:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
+      throw "oops";
+    }
+    catch ( const char* msg )
+    {
+      INFO(VARVAL(msg));
+    }
 
     INFO("restored",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
 }
@@ -435,17 +458,22 @@ void STATEREPORT_demo()
     }
 }
 
+
 int main(int , char **)
 {
-  #if 0
     printf("Util demos\n");
+  #if 1
     preserve_demo_0();
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
     findIndex_demo();
     info_demo();
-  #endif
     STATEREPORT_demo();
+
+    LOCAL_MODIFIED();
+    INFO("Do somesthing");
+  #endif
+
     return 0;
 }
