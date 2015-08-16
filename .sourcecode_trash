@@ -374,3 +374,10 @@ std::string single_quote(const Value_T& _value, bool hex=false)
 /// Like VARCHRNUM but the byte is hexadecimally formatted
 #define VARCHRHEXNUM(_v)#_v,":",util::single_quote(CHAR2UINT_CAST(_v),/*hex=*/true)
 }
+    void maybe_run_onBeforeRestore()
+    {
+        if ( !m_should_call_onBeforeRestore ) {
+             return;
+        }
+        m_onBeforeRestore(this);
+    }
