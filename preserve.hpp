@@ -18,20 +18,27 @@ template <> class preserve<>;
 */
 class preserve_base
 {
+#if PRESERVE_ADVANCED
+    static std::function<void(preserve_base*)> OnBeforeRestore_dummy_lambda()
+    {
+        return [&](preserve_base*)
+        {
+            DBG_INFO("dummy_lambda");
+        };
+    };
+#endif
+
   private:
     bool m_restore=true;
 
 #if PRESERVE_ADVANCED
-    bool m_should_call_onBeforeRestore=false;
-    std::function<void(preserve_base*)> m_onBeforeRestore = [&](preserve_base*){}; // dummy lambda
+    std::function<void(preserve_base*)> m_onBeforeRestore = OnBeforeRestore_dummy_lambda();
 
   protected:
-    void maybe_run_onBeforeRestore()
+    void runOnce_onBeforeRestore()
     {
-        if ( !m_should_call_onBeforeRestore ) {
-             return;
-        }
         m_onBeforeRestore(this);
+        m_onBeforeRestore = preserve_base::OnBeforeRestore_dummy_lambda();
     }
 #endif
 
@@ -55,6 +62,8 @@ class preserve_base
         _origin.restore(false);  // only the copied preserve instance will resote, not its origin
     }
 
+
+
     //out
     DECLARE_GETTER(restore) {   return m_restore;
     }
@@ -64,15 +73,8 @@ class preserve_base
 
 
 #if PRESERVE_ADVANCED
-    //out
-    DECLARE_GETTER(should_call_onBeforeRestore) {    return m_should_call_onBeforeRestore;
-    }
-    //in
-    DECLARE_SETTER(should_call_onBeforeRestore) {    m_should_call_onBeforeRestore= _should_call_onBeforeRestore;
-    }
     //in
     DECLARE_SETTER(onBeforeRestore) {   m_onBeforeRestore= _onBeforeRestore;
-        should_call_onBeforeRestore(true);
     }
 #endif
 
@@ -126,7 +128,7 @@ class preserve<T,UVW...> : public preserve<UVW...>
     ~preserve()
     {
 #if PRESERVE_ADVANCED
-        preserve_base::maybe_run_onBeforeRestore();
+        preserve_base::runOnce_onBeforeRestore();
 #endif
         if ( preserve_base::restore() ) {
             r= v;

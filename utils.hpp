@@ -1,5 +1,5 @@
 ////////////////////
-#define BUILD_ALL 1
+#define BUILD_ALL 3
 // BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
 // Touch , to force a rebuild all without make clean and also force ccache not to shortcut any way, make changes to
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,

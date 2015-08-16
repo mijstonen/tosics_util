@@ -16,8 +16,7 @@ void preserve_demo_0()
 #if PRESERVE_ADVANCED
     instance.
         onBeforeRestore([&](util::preserve_base* _context_) {
-            INFO(VARVAL(i),VARVAL(j),VARVAL(k),VARVAL(l),VARVAL(_context_->restore()));
-            _context_->should_call_onBeforeRestore(false);
+            INFO("my lambda 0",VARVAL(i),VARVAL(j),VARVAL(k),VARVAL(l),VARVAL(_context_->restore()));
         });
 #endif
   }
@@ -26,7 +25,7 @@ void preserve_demo_0()
 
 void preserve_demo_1()
 {
-    INFO("\npreserve_demo (always resore locally modified objects)");
+    INFO("\npreserve_demo (always restore locally modified objects)");
 
     int a=1; int b=22222;
     float d = 123.456;
@@ -42,9 +41,8 @@ void preserve_demo_1()
         LOCAL_MODIFIED_OBJECTS.
             onBeforeRestore([&](util::preserve_base* _context_)
                 {
-
+                    INFO("my lambda 0",_context_->restore());
                     INFO("before restoring:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
-                    _context_->should_call_onBeforeRestore(false);
                 });
 #endif
       INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.restore()));
@@ -461,12 +459,12 @@ void STATEREPORT_demo()
 
 int main(int , char **)
 {
-    printf("Util demos\n");
-  #if 1
+    INFO("Util demos");
     preserve_demo_0();
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
+  #if 0
     findIndex_demo();
     info_demo();
     STATEREPORT_demo();
