@@ -381,3 +381,52 @@ std::string single_quote(const Value_T& _value, bool hex=false)
         }
         m_onBeforeRestore(this);
     }
+//:BYTE_MASK
+/// mask 8 bits
+#define BYTE_MASK  0xFF
+
+
+//:NIBLE_MASK
+/// mask lower 4 bits
+#define NIBLE_MASK 0x0F
+
+
+//:BIT_IN_BYTE_MASK
+/// mask lowest 3 bits
+#define BIT_IN_BYTE_MASK 0x07
+
+
+//:PAIR_MASK
+/// mask lower 2 bits
+#define PAIR_MASK  0x03
+
+
+//:BIT_MASK
+/// mask lowest single bit
+#define BIT_MASK   0x01
+
+
+//:HIGH_BYTES_MASK
+/// mask all except lower 8 bits
+#define  HIGH_BYTES_MASK  (~BYTE_MASK)
+
+
+//:HIGH_NIBLE_MASK
+/// mask all except lower 4 bits
+#define  HIGH_NIBLE_MASK (~NIBLE_MASK)
+
+
+//:BITS_OUTSIDE_BYTE_MASK
+///mask all except lower 3 bits
+#define BITS_OUTSIDE_BYTE_MASK (~BIT_IN_BYTE_MASK)
+
+
+//:HIGH_PAIRS_MASK
+/// mask all except lower 2 bits
+#define  HIGH_PAIRS_MASK (~PAIR_MASK)
+
+
+//:HIGH_BITS_MASK
+/// mask all except lower 1 bit
+#define   HIGH_BITS_MASK   (~BIT_MASK)
+
