@@ -1,0 +1,4 @@
+#!/usr/bin/sh
+DEFINES="-DDEBUG=1 -DMONITOR_QNODES=1 -DFAST=1 -DALLOC_DEBUG=0"
+echo "/*proprocessing qnode sources with: $DEFINES*/"
+g++ -c -m64 -pipe -std=c++0x -ggdb3 -Wno-variadic-macros -Wall -Wextra -I../qnode -I/usr/include -I. -I../qnode -I. $DEFINES -E $1
