@@ -69,6 +69,32 @@
 #define CHAR2UINT_CAST(_CHR) static_cast<unsigned int>(static_cast<unsigned char>(_CHR))
 
 
+
+//
+// New concept for properties
+//
+// Use fixed name conventions and decltype to extract the type from the name.
+//
+// class classname has property propertyname
+//   Then the storing membername is m_propertyname
+//   The getter declaration is decltype(m_propertyname) propertyname() const
+//   The setter declaration is void propertyname(const decltype(m_propertyname)& _propertyname)  and
+//
+//  There is no implementation definition (it is unwhise to make one, it surpasses the purpose of properties
+//   to keep all invariants of the instance consistent. In the extreme case there is not even a implementation
+//   storage for the property but is the property constructed from other instance members).
+//
+//  But a bare getter only does
+//   return m_propertyname
+//  And a bare setter only does
+//   m_propertyname = _propertyname.
+//
+
+#define DECLARE_SETTER(propertyname) void propertyname(const decltype(m_##propertyname)& _##propertyname)
+#define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
+
+
+
 //:util
 /**
  @brief common utillity operations widely used in the source and often practical for any project

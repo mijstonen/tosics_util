@@ -6,7 +6,6 @@
 
 #define PRESERVE_ADVANCED 1
 
-
 namespace util {
 
 //IMPORTAND: this forward declaration is neccesary to make it work
@@ -23,8 +22,8 @@ class preserve_base
     bool m_restore=true;
 
 #if PRESERVE_ADVANCED
-    std::function<void(preserve_base*)> m_onBeforeRestore = [&](preserve_base*){}; // dummy lambda
     bool m_should_call_onBeforeRestore=false;
+    std::function<void(preserve_base*)> m_onBeforeRestore = [&](preserve_base*){}; // dummy lambda
 
   protected:
     void maybe_run_onBeforeRestore()
@@ -56,47 +55,24 @@ class preserve_base
         _origin.restore(false);  // only the copied preserve instance will resote, not its origin
     }
 
-
-    /// @brief Get restore property.
-    decltype(m_restore) restore() const
-    {
-        return m_restore;
+    //out
+    DECLARE_GETTER(restore) {   return m_restore;
     }
-
-    /// @brief Set restore property. If set to false, the preserved objects will not be restored
-    void restore(const decltype(m_restore)& _restore)
-    {
-        m_restore= _restore;
+    //in
+    DECLARE_SETTER(restore) {   m_restore= _restore;
     }
 
 
 #if PRESERVE_ADVANCED
-    /// @brief set handler (lambda) that is fired just before start restoring values
-    void onBeforeRestore(const decltype(m_onBeforeRestore)& _onBeforeRestore)
-    {
-        m_onBeforeRestore= _onBeforeRestore;
+    //out
+    DECLARE_GETTER(should_call_onBeforeRestore) {    return m_should_call_onBeforeRestore;
+    }
+    //in
+    DECLARE_SETTER(should_call_onBeforeRestore) {    m_should_call_onBeforeRestore= _should_call_onBeforeRestore;
+    }
+    //in
+    DECLARE_SETTER(onBeforeRestore) {   m_onBeforeRestore= _onBeforeRestore;
         should_call_onBeforeRestore(true);
-    }
-
-
-    #if 0
-    decltype(m_onBeforeRestore) onBeforeRestore() const
-    {
-        return m_onBeforeRestore;
-    }
-    #endif
-
-
-    /// @brief Set should_call_onBeforeRestore property
-    void should_call_onBeforeRestore(const decltype(m_should_call_onBeforeRestore)& _should_call_onBeforeRestore)
-    {
-        m_should_call_onBeforeRestore= _should_call_onBeforeRestore;
-    }
-
-    /// @brief Get should_call_onBeforeRestore property
-    decltype(m_should_call_onBeforeRestore) should_call_onBeforeRestore() const
-    {
-        return m_should_call_onBeforeRestore;
     }
 #endif
 

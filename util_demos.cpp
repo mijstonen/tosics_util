@@ -379,7 +379,7 @@ void info_demo()
 void STATEREPORT_demo()
 {
   {// extra local body
-    #if 1
+    #if 0
     LOCAL_MODIFIED(util::stateReport_StreamPtr);
     std::ofstream myStateReports("statereport.txt");
     ASSERT(myStateReports);                               // created stream must be valid to continue
