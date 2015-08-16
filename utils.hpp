@@ -1,5 +1,5 @@
 ////////////////////
-#define BUILD_ALL 3
+#define BUILD_ALL 222222
 // BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
 // Touch , to force a rebuild all without make clean and also force ccache not to shortcut any way, make changes to
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,
@@ -35,27 +35,6 @@
  (or oughts to be) faster.
 */
 
-//:SR_ENABLE
-//:SR_DEBUG
-/**
- \def SR_ENABLE
- @brief enable (1) or disable (0) STATEREPORT
- @sa STATEREPORT
-
- When STATEREPORT is disabled it will not report unexpected values, it will pass the return value of the call unchanged.
-
- @remark With disabling, also the advantages of STATEREPORT is lost. It's your responsibillity to decide what is more
-         importand, except that the customer could in rare cases encounter a message from STATEREPORT or be silent
-         about unexpected states.
-         Personally I would keep STATEREPORT always active.
-
- \def SR_DEBUG
- @brief Show source file and line number with the reported state or not.
- @sa STATEREPORT
-
- The name of the function or method will alwas be shown during the reported state.
-*/
-
 
 //#define DEBUG 0
 
@@ -69,54 +48,56 @@
 #define CHAR2UINT_CAST(_CHR) static_cast<unsigned int>(static_cast<unsigned char>(_CHR))
 
 
+/** \def Properties
 
-//
-// New concept for properties
-//
-// Use fixed name conventions and decltype to extract the type from the name.
-//
-// class classname has property propertyname
-//   Then the storing membername is m_propertyname
-//   The getter declaration is decltype(m_propertyname) propertyname() const
-//   The setter declaration is void propertyname(const decltype(m_propertyname)& _propertyname)  and
-//
-//  There is no implementation definition (it is unwhise to make one, it surpasses the purpose of properties
-//   to keep all invariants of the instance consistent. In the extreme case there is not even a implementation
-//   storage for the property but is the property constructed from other instance members).
-//
-//  But a bare getter only does
-//   return m_propertyname
-//  And a bare setter only does
-//   m_propertyname = _propertyname.
-//
+New concept for properties
 
-#define DECLARE_SETTER(propertyname) void propertyname(const decltype(m_##propertyname)& _##propertyname)
-#define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
+Use fixed name conventions and decltype to extract the type from the name.
 
+class classname has property propertyname
+  Then the storing membername is m_propertyname
+  The getter declaration is decltype(m_propertyname) propertyname() const
+  The setter declaration is void propertyname(const decltype(m_propertyname)& _propertyname)  and
 
+ There is no implementation definition (it is unwhise to make one, it surpasses the purpose of properties
+  to keep all invariants of the instance consistent. In the extreme case there is not even a implementation
+  storage for the property but is the property constructed from other instance members).
 
-//:util
-/**
- @brief common utillity operations widely used in the source and often practical for any project
+ But a bare getter only does
+  return m_propertyname
+ And a bare setter only does
+  m_propertyname = _propertyname.
 
- These operations evolved over the years, not all of it might be usefull the specific project.
- util moves from project to project and more functionallity is gathered.
+  The following should be valid:
+    objectname.propertyname(objectname.propertyname());        // set object property to it self
+  So the getter returntype is the same as the setter input type.
+  Even if there is no decltype(objectname)::m_propertyname attribute, the methods are still considered property
+  setter and getter.
+
+  Definition:
+
+    A setter is a method that has a single input argument as its signature that will not be modified,
+    but the setter will mopdify the object up on which it is called. Multiple calls of a setter with the
+    same input value do not change the object again.  If it does, it is not a setter.
+
+    A getter is a method without a argument in its signature but returning a value (intended) type without
+    modification of the object uppon wich it is called. Multiple calls of a getter will result in the same
+    output value. If it does, it is not a getter.
+
+    Depricated and obsolete
+     get_propertname, set_propertyname.
+
+    Recomendation
+      Prefere to write methods as properties. But distinguish other methods (if they have no/single arg)
+      by clear descriptive naming.
+
 */
-namespace util {
-//
-// Encapsulate system constants that trigger old-style-cast warnings.
-// They are allowed here because we do not alter system files
-// but no where else. THe name should be SCX_<orginal name>
-// SCX stands for System Const eXPression.
-//
-# pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
 
+/// @brief  Give the signature for object data input by a setter with name: propertyname
+#define DECLARE_SETTER(propertyname) void propertyname(const decltype(m_##propertyname)& _##propertyname)
 
-//:SCX_MAP_FAILED
-/// Same as MAP_FAILED but avoid old-style-cast warnings of the compiler
-constexpr const void* SCX_MAP_FAILED= MAP_FAILED;
-# pragma GCC diagnostic pop
+/// @brief  Give the signature for object data output by a getter with name: propertyname
+#define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
 
 //:PACKED
 /// incapsulate gcc specific attribute __packed__
@@ -169,77 +150,6 @@ constexpr const void* SCX_MAP_FAILED= MAP_FAILED;
 #else
 #define FORCE_INLINE inline
 #endif
-
-
-//:Throw_Error_Break
-/** @brief drop in replacement for a bare 'throw' expression to get a stack trace in a debugger during the exception
-
- @tparam[in] _e pass the exception of any Exception_T type
-
- Normally a exception hides the stack trace because it is unrolled the program is left at the catch handler.
- Putting a breakpoint on the catch handler is not (so) very usefull. But by wrapping each throw expression
- by this template function, you can use a debugger to display the stacktrace during the exception.
-
- */
-template <typename Exception_T>
-void Throw_Error_Break(const Exception_T& _e)
-{
-/*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
-// NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
-}
-
-
-
-
-//:BYTE_MASK
-/// mask 8 bits
-#define BYTE_MASK  0xFF
-
-
-//:NIBLE_MASK
-/// mask lower 4 bits
-#define NIBLE_MASK 0x0F
-
-
-//:BIT_IN_BYTE_MASK
-/// mask lowest 3 bits
-#define BIT_IN_BYTE_MASK 0x07
-
-
-//:PAIR_MASK
-/// mask lower 2 bits
-#define PAIR_MASK  0x03
-
-
-//:BIT_MASK
-/// mask lowest single bit
-#define BIT_MASK   0x01
-
-
-//:HIGH_BYTES_MASK
-/// mask all except lower 8 bits
-#define  HIGH_BYTES_MASK  (~BYTE_MASK)
-
-
-//:HIGH_NIBLE_MASK
-/// mask all except lower 4 bits
-#define  HIGH_NIBLE_MASK (~NIBLE_MASK)
-
-
-//:BITS_OUTSIDE_BYTE_MASK
-///mask all except lower 3 bits
-#define BITS_OUTSIDE_BYTE_MASK (~BIT_IN_BYTE_MASK)
-
-
-//:HIGH_PAIRS_MASK
-/// mask all except lower 2 bits
-#define  HIGH_PAIRS_MASK (~PAIR_MASK)
-
-
-//:HIGH_BITS_MASK
-/// mask all except lower 1 bit
-#define   HIGH_BITS_MASK   (~BIT_MASK)
-
 
 //:assert_ptr
 /// assert that a pointer is valid (not NULL) while assigning the pointer
@@ -375,47 +285,50 @@ void Throw_Error_Break(const Exception_T& _e)
  */
 #define DROP_OUTPUT (nullptr)
 
-//______________________________________________________________________________________________________________________
+
+
+//:util
+/**
+ @brief common utillity operations widely used in the source and often practical for any project
+
+ These operations evolved over the years, not all of it might be usefull the specific project.
+ util moves from project to project and more functionallity is gathered.
+*/
+namespace util {
+// { SCX   stands for System Const eXPression.
+// Encapsulate system constants that trigger old-style-cast warnings.
+// They are allowed here because we do not alter system files
+// but no where else. THe name should be SCX_<orginal name>
 //
-// property setter and getters
-// ---------------------------
-// Asume standard property
-// method names   void    classname::set_property('const' type '&/&&' _property)  and
-//             '?'type'?' classname::get_property() const
-// The in 'quotes' parts indicate that the macro's do not require a certain
-// precise type declaration.
 //
-// _SET has prefix underscore to indicate that it is input to the object
-// GET_ has postfix underscore to indicate output from the object
-//
-// The unique form of these macro's with _ and _FROM_ should reduce the chance of name clashses with other frameworks
-// (macro's 'SET' and 'GET' would be too general). Besides the underscores and _FROM_ make the source more readable
-// However there is no limitation for which classes
+# pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 
 
-//:_SET
-/// object._SET(property)_FROM_(value);
-#define _SET(property) set_##property(
+//:SCX_MAP_FAILED
+/// Same as MAP_FAILED but avoid old-style-cast warnings of the compiler
+constexpr const void* SCX_MAP_FAILED= MAP_FAILED;
+
+# pragma GCC diagnostic pop
+// } SCX
 
 
-//:_FROM
-/// object._SET(property)_FROM_(value);
-#define _FROM_(...) __VA_ARGS__)
+//:Throw_Error_Break
+/** @brief drop in replacement for a bare 'throw' expression to get a stack trace in a debugger during the exception
 
+ @tparam[in] _e pass the exception of any Exception_T type
 
-//:_PROPERTY_SET
-/// ismpl work arround  for _SET(property)_FROM_(...)
-#define _PROPERTY_SET(property,...) set_##property(__VA_ARGS__)
+ Normally a exception hides the stack trace because it is unrolled the program is left at the catch handler.
+ Putting a breakpoint on the catch handler is not (so) very usefull. But by wrapping each throw expression
+ by this template function, you can use a debugger to display the stacktrace during the exception.
 
-
-//:GET_
-/// object.GET_(value)
-#define GET_(property) get_##property()
-//
-// end property setter and getters
-//______________________________________________________________________________________________________________________
-
-
+ */
+template <typename Exception_T>
+void Throw_Error_Break(const Exception_T& _e)
+{
+/*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
+// NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
+}
 
 /**
 @brief universal alignment function
@@ -468,30 +381,6 @@ to_T static_to_type_cast(to_T _toInstance, from_T _fromInstance)
     return static_cast<decltype(_toInstance)>( _fromInstance);
 }
 
-
-//:Error_close
-/**
- @brief Close the file while reporting a optional error message and a system error message
- @param[in] _fd The filedescriptor to close.
- @return -1 on error otherwhise 0
- @sa int Error_close( int _fd, std::string _perrormsg )
-*/
-int Error_close( int _fd);
-/**
- @brief Close the file while reporting a optional error message and a system error message
- @param[in] _fd The filedescriptor to close.
- @param[in] _perrormsg  (optional) extra error message
- @return -1 on error otherwhise 0
- @sa int Error_close( int _fd)
-*/
-inline
-int Error_close( int _fd, std::string _perrormsg )
-{
-    perror( _perrormsg.c_str());
-    return Error_close( _fd);
-}
-
-
 //:setFileSize
 /**
  @brief set file to desired size with explicit grow or shrink control
@@ -513,8 +402,6 @@ int Error_close( int _fd, std::string _perrormsg )
  @sa man lseek(2)
 */
 int setFileSize( int _fd, size_t _size, bool _grow=true);
-
-
 
 //: findIndex
 /**
@@ -568,7 +455,6 @@ findIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
 
     ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
 }
-
 
 
 } //namespace util

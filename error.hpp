@@ -27,6 +27,27 @@ cerror(const Args_T&... _args)
     info2stream(std::cerr,_args...);
 }
 
+//:Error_close
+/**
+ @brief Close the file while reporting a optional error message and a system error message
+ @param[in] _fd The filedescriptor to close.
+ @return -1 on error otherwhise 0
+ @sa int Error_close( int _fd, std::string _perrormsg )
+*/
+int Error_close( int _fd);
+/**
+ @brief Close the file while reporting a optional error message and a system error message
+ @param[in] _fd The filedescriptor to close.
+ @param[in] _perrormsg  (optional) extra error message
+ @return -1 on error otherwhise 0
+ @sa int Error_close( int _fd)
+*/
+    inline int
+Error_close( int _fd, std::string _perrormsg )
+{
+    perror( _perrormsg.c_str());
+    return Error_close( _fd);
+}
 
 }// namespace util
 

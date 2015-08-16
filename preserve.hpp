@@ -1,7 +1,7 @@
 #ifndef PRESERVE_HPP_
 #define PRESERVE_HPP_ 1
 
-//#include "utils.hpp"
+#include "utils.hpp"
 #include "info.hpp"
 
 #define PRESERVE_ADVANCED 1
@@ -23,7 +23,7 @@ class preserve_base
     {
         return [&](preserve_base*)
         {
-            DBG_INFO("dummy_lambda");
+          //  DBG_INFO("dummy_lambda"); // for test and debug
         };
     };
 #endif

@@ -1,10 +1,32 @@
 #ifndef STATEREPORT_H_
 #  define STATEREPORT_H_ 1
 
-//#include "utils.hpp"
-//#include "info.hpp"
-//#include "preserve.hpp"
+#include "utils.hpp"
+#include "info.hpp"
+#include "preserve.hpp"
 #include "error.hpp"
+
+//:SR_ENABLE
+//:SR_DEBUG
+/**
+ \def SR_ENABLE
+ @brief enable (1) or disable (0) STATEREPORT
+ @sa STATEREPORT
+
+ When STATEREPORT is disabled it will not report unexpected values, it will pass the return value of the call unchanged.
+
+ @remark With disabling, also the advantages of STATEREPORT is lost. It's your responsibillity to decide what is more
+         importand, except that the customer could in rare cases encounter a message from STATEREPORT or be silent
+         about unexpected states.
+         Personally I would keep STATEREPORT always active.
+
+ \def SR_DEBUG
+ @brief Show source file and line number with the reported state or not.
+ @sa STATEREPORT
+
+ The name of the function or method will alwas be shown during the reported state.
+*/
+
 
 namespace util {
 //:STATEREPORT
@@ -200,7 +222,7 @@ namespace util {
  Help @e ismpl to instrument correctly by avoiding '{' and '}' in the actual exclusion list during the
  use of STATEREPORT
 */
-#  define SR_EXCLUDE_ALL(...) std::vector<int>({ __VA_ARGS__ })
+#  define SR_EXCLUDE_ALL(...) std::vector<long>({ __VA_ARGS__ })
 
 
 //:SR_EMPTY_INITIALISATION_LIST
@@ -252,9 +274,9 @@ namespace util {
  @param _what  0, 1, 2  or  3  (default=3 meaning report everything)
  @warning Do not call __stateReport() directly ( that is why the name starts with __ )  use macro STATEREPORT
 */
-int
-__stateReport( int _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller
-             , std::vector<int> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
+    long
+__stateReport( long _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller
+             , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 
 /**
@@ -269,7 +291,8 @@ __stateReport( int _return_state_of_call_, char const* _callee, char const* _fil
  @param _what  0, 1, 2  or  3  (default=3 meaning report everything)
  @warning Do not call __stateReport() directly ( that is why the name starts with __ ) use macro STATEREPORT
 */
-int inline __stateReport( int _return_state_of_call_, char const* _callee, char const* _file, unsigned _line
+    inline long
+__stateReport( long _return_state_of_call_, char const* _callee, char const* _file, unsigned _line
                         , char const* _caller, int _what)
 {
     return __stateReport( _return_state_of_call_, _callee, _file, _line, _caller, SR_ZERO_IS_SUCCESS, _what);
@@ -278,7 +301,7 @@ int inline __stateReport( int _return_state_of_call_, char const* _callee, char 
           util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
 #    else  // no SR_DEBUG
 
-int
+
 /**
  @brief enabled: NO debug: implements the operations for macro STATEREPORT
  @sa STATEREPORT
@@ -292,8 +315,9 @@ int
 
  @warning Do not call __stateReport() directly ( that is why the name starts with __ ) use macro STATEREPORT
 */
-__stateReport( int _return_state_of_call_, char const* _callee, char const* _caller
-             , std::vector<int> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
+    long
+__stateReport( long _return_state_of_call_, char const* _callee, char const* _caller
+             , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 /**
  @brief enabled: NO debug: implements the operations for macro STATEREPORT
@@ -303,7 +327,8 @@ __stateReport( int _return_state_of_call_, char const* _callee, char const* _cal
  @sa STATEREPORT
  @warning Do not call __stateReport() directly ( that is why the name starts with __ )  use macro STATEREPORT
 */
-int inline __stateReport(  int _return_state_of_call_, char const* _callee, char const* _caller,int _what)
+    long inline
+__stateReport(  long _return_state_of_call_, char const* _callee, char const* _caller,int _what)
 {
     return __stateReport( _return_state_of_call_, _callee, _caller, SR_ZERO_IS_SUCCESS, _what);
 }

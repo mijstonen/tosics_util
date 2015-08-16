@@ -1,7 +1,7 @@
-//#include "utils.hpp"
-//#include "info.hpp"
-//#include "preserve.hpp"
-//#include "error.hpp"
+#include "utils.hpp"
+#include "info.hpp"
+#include "preserve.hpp"
+#include "error.hpp"
 #include "statereport.hpp"
 
 
@@ -377,7 +377,7 @@ void info_demo()
 void STATEREPORT_demo()
 {
   {// extra local body
-    #if 0
+    #if 1
     LOCAL_MODIFIED(util::stateReport_StreamPtr);
     std::ofstream myStateReports("statereport.txt");
     ASSERT(myStateReports);                               // created stream must be valid to continue
@@ -464,7 +464,7 @@ int main(int , char **)
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
-  #if 0
+  #if 1
     findIndex_demo();
     info_demo();
     STATEREPORT_demo();

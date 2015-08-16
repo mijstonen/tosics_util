@@ -430,3 +430,43 @@ std::string single_quote(const Value_T& _value, bool hex=false)
 /// mask all except lower 1 bit
 #define   HIGH_BITS_MASK   (~BIT_MASK)
 
+#if 0 // depricated but still in use, turned of for detection where used.
+//______________________________________________________________________________________________________________________
+//
+// property setter and getters
+// ---------------------------
+// Asume standard property
+// method names   void    classname::set_property('const' type '&/&&' _property)  and
+//             '?'type'?' classname::get_property() const
+// The in 'quotes' parts indicate that the macro's do not require a certain
+// precise type declaration.
+//
+// _SET has prefix underscore to indicate that it is input to the object
+// GET_ has postfix underscore to indicate output from the object
+//
+// The unique form of these macro's with _ and _FROM_ should reduce the chance of name clashses with other frameworks
+// (macro's 'SET' and 'GET' would be too general). Besides the underscores and _FROM_ make the source more readable
+// However there is no limitation for which classes
+
+
+//:_SET
+/// object._SET(property)_FROM_(value);
+#define _SET(property) set_##property(
+
+
+//:_FROM
+/// object._SET(property)_FROM_(value);
+#define _FROM_(...) __VA_ARGS__)
+
+
+//:_PROPERTY_SET
+/// ismpl work arround  for _SET(property)_FROM_(...)
+#define _PROPERTY_SET(property,...) set_##property(__VA_ARGS__)
+
+
+//:GET_
+/// object.GET_(value)
+#define GET_(property) get_##property()
+//
+// end property setter and getters
+//______________________________________________________________________________________________________________________

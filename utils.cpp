@@ -1,7 +1,7 @@
-//#include "utils.hpp"
-//#include "info.hpp"
-//#include "preserve.hpp"
-//#include "error.hpp"
+#include "utils.hpp"
+#include "info.hpp"
+#include "preserve.hpp"
+#include "error.hpp"
 #include "statereport.hpp"
 
 
@@ -28,9 +28,9 @@ std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPt
 #endif
 
 # if SR_DEBUG
-int __stateReport(  int _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller, std::vector<int> const& _exclusionsVector, int _what)
+long __stateReport(  long _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller, std::vector<long> const& _exclusionsVector, int _what)
 # else // release hides location information
-int __stateReport(  int _return_state_of_call_, char const* _callee, char const* _caller, std::vector<int> const& _exclusionsVector, int _what)
+long __stateReport(  long _return_state_of_call_, char const* _callee, char const* _caller, std::vector<long> const& _exclusionsVector, int _what)
 # endif // SR_DEBUG
 {
     short mode=0;
@@ -124,11 +124,11 @@ helper to de STATEREPORT() perror() on close()
 */
 int Error_close( int _fd)
 {
-    if ( STATEREPORT(  close( _fd)  ) ){
-        perror("close() failed");
-        return -1;
+    if ( !STATEREPORT(  close( _fd)  ) ){
+        return 0;
     }
-    return 0;
+    perror("close() failed");
+    return -1;
 }
 /*
 ________________________________________________________________________________________________________________________
@@ -144,14 +144,24 @@ int setFileSize( int _fd, size_t _size, bool _grow)
     }
 
     auto ofs= lseek( _fd, static_cast<off_t>( new_pos), SEEK_SET);
+
+    #if 0
     if ( ofs== static_to_type_cast( ofs,-1) ) {
         Error_close( _fd, "Error calling lseek() to 'stretch' the file");
         return -1;
     }
+    #else   // rewrote code but it is not tested so on doubts, fallback to the code above. Note that the error output is different.
+
+    if ( STATEREPORT( ofs, SR_EXCLUDE_ALL( static_cast<long>(new_pos)) )== -1 ) {
+        STATEREPORT( Error_close( _fd, "Error calling lseek() to 'stretch' the file") );
+        return -1;
+    }
+    #endif
     ASSERT( static_to_type_cast(new_pos, ofs)== new_pos  );
 
     if ( _grow ) {
         // write last byte causes file size to be set to newsize+1 ( == _size )
+        #if 0
         auto wr= write( _fd, "", 1);
         if ( wr< static_to_type_cast(wr,0) ) {
             if (STATEREPORT( wr , 'E' ))  {
@@ -164,6 +174,13 @@ int setFileSize( int _fd, size_t _size, bool _grow)
             std::cerr<< "write() did write "<<wr << "bytes in stead of one last byte"<<std::endl;
             return -3;
         }
+        #else   // rewrote code but it is not tested so on doubts, fallback to the code above. Note that the error output is different.
+        auto write_last_byte = write( _fd,"", 1);
+        if ( STATEREPORT(write_last_byte,SR_EXCLUDE_ALL(1))!=1 ) {
+            CERROR(VARVAL(write_last_byte)," expected to be '1'");
+            STATEREPORT( Error_close( _fd));
+        }
+        #endif
     }
     return 0;
 }
