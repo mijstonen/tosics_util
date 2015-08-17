@@ -279,6 +279,11 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
              , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 
+
+
+
+
+
 /**
  @brief enabled:debug: implements the operations for macro STATEREPORT
  @sa STATEREPORT
@@ -297,10 +302,18 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
 {
     return __stateReport( _return_state_of_call_, _callee, _file, _line, _caller, SR_ZERO_IS_SUCCESS, _what);
 }
+
+
+
+
+
 #      define STATEREPORT(_CALL,...) \
           util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
-#    else  // no SR_DEBUG
 
+
+
+
+#    else  // no SR_DEBUG
 
 /**
  @brief enabled: NO debug: implements the operations for macro STATEREPORT
@@ -319,6 +332,11 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
 __stateReport( long _return_state_of_call_, char const* _callee, char const* _caller
              , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
+
+
+
+
+
 /**
  @brief enabled: NO debug: implements the operations for macro STATEREPORT
  @param _return_state_of_call_ return value of _caller
@@ -332,8 +350,18 @@ __stateReport(  long _return_state_of_call_, char const* _callee, char const* _c
 {
     return __stateReport( _return_state_of_call_, _callee, _caller, SR_ZERO_IS_SUCCESS, _what);
 }
+
+
+
+
+
 #      define STATEREPORT(_CALL,...) util::__stateReport(_CALL, #_CALL, __PRETTY_FUNCTION__,##__VA_ARGS__)
 #    endif // SR_DEBUG
+
+
+
+
+
 
 /** @brief Set, get, or exchange the stream pointer to the stream that is used during STATEREPORT
  *  @param _stateReport_StreamPtr New stream pointer (aka &std::cout or &my_file_stream)
@@ -359,6 +387,11 @@ std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPt
 #  else // no SR_ENABLE
 #    define STATEREPORT(_CALL,...) _CALL
 #  endif // SR_ENABLE
+
+
+
+
+
 
 
 } //namespace util
