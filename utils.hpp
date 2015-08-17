@@ -443,6 +443,9 @@ int setFileSize( int _fd, size_t _size, bool _grow=true);
         aka (small) (programing) language parsing.
 
  @sa util_demos.cpp:findIndex_demo()
+  
+ @return 0 if _text[0] is not found in _texts[1]..._texts[ITEMS_IN(texts)-1]
+           or 1..ITEMS_IN(texts)-1 when found.
 */
 
     inline void
