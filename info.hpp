@@ -1,33 +1,43 @@
+#pragma once
+//info.hpp
 #ifndef INFO_HPP_
 #  define INFO_HPP_ 1
 
-#  include "utils.hpp"
+#  include "util.hpp"
 
 //@{
 /** @note None of the util functions below should be used directly!
  * Use the macro's enlisted below (start reading about INFO)
  */
 
-namespace util {
+namespace tosics::util {
 
   /// @brief Data or settings to support the INFO system, alling easy change and extension
   class InfoSettings
   {
     public:
-      // { configurable
+      //@{ configurable
       std::ostream* ostreamPtr= &std::cout;
       const char* objectSeparation= " ";
       const char* customQuote= "'";
-      // }
-      // work variable
+      //@} configurable
+
+      // work variables
       short objOnLineCnt= 0;
+      bool hex_once= false;
 
       /// @brief Perform some basic checks that ensure that following INFO will perform valid output.
       /// @return 0 if all is OK, >0 OK but unusual, <0 if not OK to be used with STATEREPORT
-      int validateFailed() const;
+      state_t validateFailed() const;
+
+      /// @brief for macros to display a hexadecimal value
+      void inline next_hex()
+      {
+          hex_once=true;
+      }
   };
 
-  extern InfoSettings *AppliedInfoSettingsPtr;  // implemented in utils.cpp
+  extern thread_local InfoSettings *AppliedInfoSettingsPtr;  // implemented in utils.cpp
 
 //@{
 /// @brief Basic low level definitions
@@ -96,14 +106,22 @@ now_stream_object( std::ostream* os_ ,Object_T const& _object)
     ( *os_ )<< _object;
 }
 
-#if 1
     template<>
     inline void
 now_stream_object<bool>( std::ostream* os_ , bool  const& _object)
 {
-  now_stream_object( os_, ( _object?"true":"false" ));
+    now_stream_object( os_, ( _object?"true":"false" ));
 }
-#endif
+    template<>
+    inline void
+now_stream_object<std::nullptr_t>( std::ostream* os_ , std::nullptr_t  const& _object)
+{
+    // std::nullptr_t is not a pointer so it needs its own specialization
+    FAKE_USE(_object);
+    now_stream_object( os_, "nullptr");
+}
+
+
 
 //@{
 /// @brief Specialize for floating point types because they need to presented with the correct precision.
@@ -113,7 +131,6 @@ now_stream_object_fp( std::ostream* os_ , Object_T const& _object)
 {
     (*os_) <<std::setprecision( std::numeric_limits<Object_T>::max_digits10) << _object;
 }
-
     template<>
     inline void
 now_stream_object<float>( std::ostream* os_ , float const& _object)
@@ -139,17 +156,23 @@ now_stream_object<long double>( std::ostream* os_ , long double  const& _object)
 
     template<typename Value_T>
     inline std::string
-custom_quote( Value_T const& _value, bool hex=false)
+custom_quote( Value_T const& _value)
 {
-    std::stringstream ss;
-
+    std::ostringstream ss;
     ss << CustomQuote();
-    if (hex) ss<< "0x"<< std::hex;
+    if (AppliedInfoSettingsPtr->hex_once) {
+        ss<< "0x"<< std::hex;
+    }
     now_stream_object( &ss, _value);
-    if (hex) ss<< std::dec;
+    if (AppliedInfoSettingsPtr->hex_once) {
+        ss<< std::dec;
+        AppliedInfoSettingsPtr->hex_once = false;
+    }
     ss << CustomQuote();
-    return std::move( ss.str());
+    return /**/std::move(/**/ ss.str() /**/)/**/;
 }
+
+
 
 //______________________________________________________________________________
 
@@ -201,47 +224,103 @@ info( First_T const& _first, Remaining_T const&... _remaining)
     do_stream( _first);
     info( _remaining...);
 }
+    template <typename NextValue_T>
+    void
+argValues2StrVector( std::vector<std::string>* values_, NextValue_T const& _next_value_t )
+{
+    values_->push_back(custom_quote(_next_value_t));
+}
+//@{ VARVALS macro assistance
+    template<typename FirstValue_T, typename... RemainingValues_T>
+    void
+argValues2StrVector( std::vector<std::string>* values_,
+                          FirstValue_T const& _first_value, RemainingValues_T const&...  _remaining_values)
+{
+    argValues2StrVector( values_,_first_value);
+    argValues2StrVector( values_,_remaining_values...);
+}
+    state_t
+zipLeftsAndRightsJoin2Str( std::string *out_
+                         , std::vector<std::string> const& _lefts
+                         , char const* _left_right_separator
+                         , std::vector<std::string> const& _rights
+                         , char const* _zippedSeparator
+                         );
+void __varvals_merge_with_lables(std::string* out_, char const * _args_str, std::vector<std::string> const& _values);
 
+    template <typename... VA_ARGS_T>
+    std::string
+varvals(char const * _args_str, VA_ARGS_T const&... _va_args)
+{
+    // extract values
+    std::vector<std::string> values;
+    argValues2StrVector( &values,  _va_args...);
+
+    std::string return_value;
+    __varvals_merge_with_lables( &return_value, _args_str, values);
+
+    return return_value;
+}
+//@} VARVALS macro assistance
+
+//:onullstream:// For providing s ostream& that supresses writing
+    class
+onullstream : public std::ostream
+{
+    using std::ostream::ostream;
+
+    class : public std::streambuf
+    {
+      public:
+        int overflow(int _c) override final
+        {
+            return _c;
+        }
+
+    }   hole;
+
+  public:
+    onullstream()
+    : onullstream(&hole)
+    {
+    }
+};
 
 }// namespace util
 //@}
 
 //:INFO_TO
 /// @brief redirect INFO to other stream
-#  define INFO_TO(TargetOstream_) util::Direct_info_to( & TargetOstream_ )
+#  define INFO_TO(TargetOstream_) tosics::util::Direct_info_to( & TargetOstream_ )
 
 //:ENDL
 /// @brief issue newline and flush (aka << std::endl)
-#  define ENDL util::NextLines(0)
+#  define ENDL tosics::util::NextLines(0)
 
 //:ENDLINES
 /// @brief issue newline and flush (aka << std::endl)
-#  define ENDLINES(extra_newlines) util::NextLines(extra_newlines)
+#  define ENDLINES(extra_newlines) tosics::util::NextLines(extra_newlines)
 
 
 //:INFO_STREAM_PTR
-#  define INFO_STREAM_PTR (util::OstreamPtrRef())
+#  define INFO_STREAM_PTR (tosics::util::OstreamPtrRef())
 
 
 //@{
 /**
  * @brief custom formatters that display the symbol or expression allong with the value.
+ *
+ * Usage INFO(VARVAL(value)); ,.... INFO(PTRCHRNUMHEX(address));
  */
 //:VARVAL
 /// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
-#  define VARVAL(_v) #_v"=",util::custom_quote(_v)
+#  define VARVAL(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(_ARG)
 
 //:VARVALHEX
 /// as VARVAL but the value (if nummeric) is presented hexadecimally
-#  define VARVALHEX(_v)  #_v"=",util::custom_quote(_v,/*hex=*/true)
-
-//:PTRVAL
-/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
-#  define PTRVAL(_p) #_p"=",util::custom_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::custom_quote(*_p):"(nullptr)")
-
-//:PTRVALHEX
-/// As PTRVAL but the pointed value is represented exadecimal
-#  define PTRVALHEX(_p) #_p"=",util::custom_quote(reinterpret_cast<const void*>(_p)),"->",((_p)?util::custom_quote(*_p,/*hex=*/true):"(nullptr)")
+#  define VARVALHEX(_ARG)  #_ARG"=",\
+    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(_ARG) )
 
 //:VARCHRNUM
 /** @brief byte specific VARVAL, represent byte as number not as character
@@ -249,11 +328,41 @@ info( First_T const& _first, Remaining_T const&... _remaining)
  (u)int8_t types tend to be printed as a character by the default type overloading.
  By casting it to unsigned we select the number printing overload of ostream
  */
-#  define VARCHRNUM(_v) #_v"=",util::custom_quote(CHAR2UINT_CAST(_v))
+#  define VARCHRNUM(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(CHAR2UINT_CAST(_ARG))
 
-//:VARCHRHEXNUM
+//:VARCHRNUMHEX
 /// Like VARCHRNUM but the byte is hexadecimally formatted
-#  define VARCHRNUMHEX(_v) #_v"=",util::custom_quote(CHAR2UINT_CAST(_v),/*hex=*/true)
+#  define VARCHRNUMHEX(_ARG) #_ARG"=",\
+    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(_ARG)))
+
+//:PTRVAL
+/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
+#  define PTRVAL(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : tosics::util::custom_quote(*_ARG) )
+
+//:PTRVALHEX
+/// As PTRVAL but the pointed value is represented hexadecimal
+#  define PTRVALHEX(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : (tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(*_ARG)) )
+
+//:PTRCHRNUMHEX
+/// Combines PTRVAL and VARCHRNUMHEX (pointed character byte value is represented hexadecimal)
+#  define PTRCHRNUMHEX(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(*_ARG))) )
+
+//:VARVALS:// i.s.o INFO(VARVAL(a),VARVAL(b),VARVAL(c) you can also write INFO(VARVALS(a,b,c))
+#define VARVALS(...) tosics::util::varvals(VSTRINGS(__VA_ARGS__),__VA_ARGS__)
+
 //@}
 
 
@@ -265,9 +374,11 @@ info( First_T const& _first, Remaining_T const&... _remaining)
 /// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
 /// @sa INFO
 #    define DBG_INFO(...) INFO(__VA_ARGS__)
+#    define DBG_INFO_FUNC INFO_FUNC
 #  else
 /// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
 #    define DBG_INFO(...)
+#    define DBG_INFO_FUNC
 #  endif
 
 #  if ALLOC_DEBUG
@@ -326,11 +437,19 @@ info( First_T const& _first, Remaining_T const&... _remaining)
           strings for embedded languages (aka a specific interpreter, html or embedded (dynamic) sql).
 */
 #  if 1
-#     define INFO(...) util::info(__VA_ARGS__)
+#     define INFO(...) tosics::util::info(__VA_ARGS__)
 #  else
 /// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
 # define INFO(...)
 #  endif
+
+//:INFO_FUNC:// Fast easy display function
+#define INFO_FUNC INFO(BOOST_CURRENT_FUNCTION)
+
+#define STREAM2STR(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<<_MSGS)).str()
+#define FUNC_MSG(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<< \
+    "File:"<<__FILE__<<" function:"<<BOOST_CURRENT_FUNCTION <<" line:"<<__LINE__<<": "<<_MSGS)).str()
+
 
 
 #endif // INFO_HPP_ 1

@@ -1,0 +1,139 @@
+Changelog march..june 2017
+==========================
+
+Prelude
+-------
+
+In august 2015 it was decided that the spinoff of another project, 'util' will
+continue as separate project and will be published as tosics_util. This year I
+decided to publisch it on GitHub, but mainly as offline storage and secundairly
+use in the open source communitity.
+
+Util is a evaluated library out of more then 20 years of C++ experience and
+serves as as a collection of utilities wich are (extremely) usefull during
+software development and debugging, fast compilation, (error) state detection.
+It also has some functionality not found somewhere else in paticulair by
+expoiting low hanging fruit of modern C++(11..17) and its (experimental)
+libraries. In particular the implementation of VARVALS and the cpx project
+drove the changes in the library.
+
+Unfortunally, this document is not intended for documenting it tosics util.
+Here changes made are technically documented, in paticular because they
+where not documented in git comments.
+
+Notice, tosics::util is usefull but not perfect, certain refactoring and
+architectual and funtional development is still to be done. The trace back
+functionality is weak.
+
+Related projects
+----------------
+treenode :  util was born out of it. Treenode is a specialized key-value
+            database.
+
+cpx      :  cpx (ComPile and eXecute) is build on top of util, meanwhile it is
+            used to prototype and test functionality being implemented in util.
+            Cpx lets you run C++ as a script, fast prototyping and do
+            high order metaprogramming.
+
+
+CHANGES
+-------
+Changes are reported in (sorted) order of differences, not time or functional
+related.
+
+Project wide
+- Replaced util(s) by namespace tosics::util
+- All headers start with #pragma once
+- All files mention their own file name in a comment at the one of the first
+  lines of the file.
+- Incedental compiles with CLANG to ensure compatibility avoid
+  (too) GCC specific development.
+- Added simplest possible to use datetime() function.
+
+build.sh : Use of ninja build tool in stead of make.
+
+CMakeLists.txt : Ongoing improvements due to never ending cmake.
+
+errors.hpp : Namespace change to tosics::util and a few comments
+
+gnq : Needs to be done TODO  (see updates in snq)
+
+inc2gch : New, precompiles a header file for GCC.
+
+inc2pch : New, precompiles a header file for CLANG.  WARNING: unmaintained,
+
+rebuild-stdinc : Adapted utils project environment.
+
+info.hpp
+- Added VARVALS, required several detail changes
+- onullstream: For providing ostream& that supresses writing
+- Added INFO_FUNC DBG_INFO_FUNC
+- Added STREAM2STR
+- Added FUNC_MSG
+
+preserve.hpp
+- m_restore is now a bit i.s.o. boolean. See commen in file.
+- removed preompiler variable PRESERVE_ADVANCED
+- property macros removed from util. So properties for restore are implemented
+  nativefly.
+
+tosics_util.hpp: New, the include file for using the tosics_util library.
+
+utils.hpp renamed to util.hpp
+
+util.hpp
+- Added VSTRINGS (equvalent of __STRING but for a variable number of arguments)
+- Added limited ANSI color support.
+- typedef state_t and function State for STATEREPORT use.
+- Added Is_null to have a single place of NULL / 0 / nullptr testing
+- Added program arguments related funtions and objects
+  . info_main_args()
+  . #SHOW_ARGS
+  . ProgramArguments
+  . Info_ProgramArguments()
+- Added throw exception handling and signal handling through
+  . enum eBreakCategory
+  . ThrowBreak()
+  . DumpBacktraceInFileStream()
+- Added ThrowEvent() (called for exceptions used fro control flow)
+- Added smart multifunctional configurable join and split functions.
+  . Append_splitted()
+  . Append_joined()
+- replaced FAKE_USE macro by variadic template based FAKE_USE
+  (allowing multiple arguments at once)
+- Added Initialize() to initialize the utility library at start of of the
+  application.
+
+- Broken and depricated functionality is all moved to the bottom of the file and
+  likely gradually being removed in future.
+  . removed property macros DECLARE_SETTER and DECLARE_GETTER, but keeping the
+    property sugnature convention.
+  . Throw_Error_Break() is still working but depricated.
+
+utils.cpp renamed to util.cpp
+
+util.cpp
+- InfoSettings::validateFailed() checks extended.
+- VARVALS support
+  . Added zipLeftsAndRightsJoin2Str(),
+    zip 2 string vectors together.
+  . __varvals_merge_with_lables() Do not call directly.
+- Added program arguments related funtions and objects
+  . ProgramArguments
+  . Info_ProgramArguments()
+  . On_signal()
+  . Initialize()
+- Added Filesystem assistance, based on std::experimental::filesystem
+  . FileInPATH
+  . PathWriteTime
+
+util_demos.cpp
+  There has been changes for testing purposes, but many testing took place
+  in conjunction of developing cpx. Some to do specific debugging. Completing
+  it with the new ly added functionality is future planned.
+
+
+TODO:
+  Refactor, all first level symbols (aka functions and objects in the namespace)
+  shall start with a capital character.
+  Rename target library util to .... (?) .

@@ -1,27 +1,43 @@
+cmake_minimum_required(VERSION 3.5)
+#############
+project(util)
+#############
+
+
 #____________________________________________________________________________________
 # define
 
-cmake_minimum_required(VERSION 2.8)
+set(PRJ_PARENT "/home/michel/Projects/Kdevelop")
+ set(INCLUDE_PATH "${PRJ_PARENT}/util/")
+set(CMAKE_CXX_COMPILER /usr/bin/g++)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ")
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -O0 -ggdb")
 
-project(util)
+# to link with libtrace ?  link_directories(/usr/local/lib)  or use find_package??? and find_library???
 
-link_directories(/usr/local/lib)
+add_definitions(
+)
 
-# Compile (progressive) C++11 syntax and do (almost) every thinkable possible warning
-# stdinc.h is precompiled, enforce loading of it right from the start
-add_definitions(-std=gnu++1y -xc++ -include ../util/stdinc.hpp -Wall -Wextra -Wold-style-cast)
-## disabled  -Weffc++  -Wno-variadic-macros -Wpedantic causes too much noise,
-#   consider it as a regulary but low prio task and to be enabled in the review phase
-
+add_compile_options(
+    -march=native
+    -save-temps
+    -std=c++14
+    -ggdb
+    -I${INCLUDE_PATH}
+    -include stdinc.hpp
+    -Wall -Wextra -Wold-style-cast
+    -x c++
+    )
 #____________________________________________________________________________________
 # compile
 
-add_library(utils STATIC
-    utils.cpp
+add_library(
+    util STATIC
+    util.cpp
 )
 
-
-add_executable(demos
+add_executable(
+    demos
     util_demos.cpp
 )
 
@@ -29,9 +45,9 @@ add_executable(demos
 # link
 
 target_link_libraries(demos
-  utils
+  util
+  stdc++fs
 )
-
 
 #____________________________________________________________________________________
 # test
@@ -45,4 +61,5 @@ add_test(demos
 #____________________________________________________________________________________
 # install
 
-install(TARGETS demos RUNTIME DESTINATION bin)
+# install(TARGETS demos RUNTIME DESTINATION bin)
+

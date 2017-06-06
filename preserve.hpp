@@ -1,15 +1,19 @@
+#pragma once
+//preserve.hpp
 #ifndef PRESERVE_HPP_
 #define PRESERVE_HPP_ 1
 
-#include "utils.hpp"
+#include "util.hpp"
 #include "info.hpp"
 
-#define PRESERVE_ADVANCED 1
 
-namespace util {
+//# include <functional>
+
+
+namespace tosics::util {
 
 //IMPORTAND: this forward declaration is neccesary to make it work
-/// @sa util::preserve< T, UWV...>
+/// @sa tosics::util::preserve< T, UWV...>
 template <typename... T>   class preserve;
 template <> class preserve<>;
 
@@ -18,7 +22,6 @@ template <> class preserve<>;
 */
 class preserve_base
 {
-#if PRESERVE_ADVANCED
     static std::function<void(preserve_base*)> OnBeforeRestore_dummy_lambda()
     {
         return [&](preserve_base*)
@@ -26,12 +29,16 @@ class preserve_base
           //  DBG_INFO("dummy_lambda"); // for test and debug
         };
     };
-#endif
 
   private:
-    bool m_restore=true;
+    //bool m_restore=true;
+    // a nameless struct of bitfields has the advantage that the datatype is extendable with
+    //  control bits witout (to a certain amount) changing size of the datatype.
+    struct {
+        unsigned m_restore:1;
+    };
 
-#if PRESERVE_ADVANCED
+
     std::function<void(preserve_base*)> m_onBeforeRestore = OnBeforeRestore_dummy_lambda();
 
   protected:
@@ -40,7 +47,6 @@ class preserve_base
         m_onBeforeRestore(this);
         m_onBeforeRestore = preserve_base::OnBeforeRestore_dummy_lambda();
     }
-#endif
 
   public:
 
@@ -64,19 +70,23 @@ class preserve_base
 
 
 
-    //out
-    DECLARE_GETTER(restore) {   return m_restore;
+    //property (out/get)
+    bool restore() const
+    {
+        return m_restore;
     }
-    //in
-    DECLARE_SETTER(restore) {   m_restore= _restore;
+
+    //property (in/set)
+    void restore(bool const _restore)
+    {
+        m_restore= _restore;
     }
 
 
-#if PRESERVE_ADVANCED
-    //in
-    DECLARE_SETTER(onBeforeRestore) {   m_onBeforeRestore= _onBeforeRestore;
+    //property (in/set)
+    void onBeforeRestore(decltype(m_onBeforeRestore) const& _onBeforeRestore)
+    {   m_onBeforeRestore= _onBeforeRestore;
     }
-#endif
 
 };
 
@@ -127,9 +137,7 @@ class preserve<T,UVW...> : public preserve<UVW...>
 
     ~preserve()
     {
-#if PRESERVE_ADVANCED
         preserve_base::runOnce_onBeforeRestore();
-#endif
         if ( preserve_base::restore() ) {
             r= v;
         }
@@ -158,7 +166,7 @@ public:
 };
 
 
-template <typename... T>  class preserve<T...> make_preserve(T&... refs)
+template <typename... T>  class preserve<T...> make_preserve(T&... /* refs*/)
 {
   ASSERT(false); // DO NOT CALL THIS METHOD, it is only supplied for the type system
   // needed in decltype of macro
@@ -167,7 +175,7 @@ template <typename... T>  class preserve<T...> make_preserve(T&... refs)
 
 } // namespace util
 
-#define preserve_INSTANCE(...) decltype(util::make_preserve(__VA_ARGS__))
+#define preserve_INSTANCE(...) decltype(tosics::util::make_preserve(__VA_ARGS__))
 // Macro's for users
 
 /// @brief Make a named preserve instance and list the objects to be preserved after it, see preserve demos 0 in util_demos.cpp

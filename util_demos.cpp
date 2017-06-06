@@ -1,21 +1,23 @@
-#include "utils.hpp"
+#include "util.hpp"
 #include "info.hpp"
 #include "preserve.hpp"
 #include "error.hpp"
 #include "statereport.hpp"
 
 
+namespace tu=tosics::util;
+
 void preserve_demo_0()
 {
   INFO("\npreserve_demo 0 for debugging");
   int i=5, j=20,k=21,l=22;
-  { PRESERVE_IN(instance, i,j,k,l);  // basic declaring macro with explist name of util::preserve<...> object (aka instance)
+  { PRESERVE_IN(instance, i,j,k,l);  // basic declaring macro with explist name of tu::preserve<...> object (aka instance)
     i=9;
     std::cout<<i<<std::endl;
     //instance.restore(false);
 #if PRESERVE_ADVANCED
     instance.
-        onBeforeRestore([&](util::preserve_base* _context_) {
+        onBeforeRestore([&](tu::preserve_base* _context_) {
             INFO("my lambda 0",VARVAL(i),VARVAL(j),VARVAL(k),VARVAL(l),VARVAL(_context_->restore()));
         });
 #endif
@@ -39,10 +41,19 @@ void preserve_demo_1()
 #if PRESERVE_ADVANCED
         // Do something before restoring in case the body is left by some reason
         LOCAL_MODIFIED_OBJECTS.
-            onBeforeRestore([&](util::preserve_base* _context_)
+            onBeforeRestore([&](tu::preserve_base* _context_)
                 {
                     INFO("my lambda 0",_context_->restore());
                     INFO("before restoring:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
+
+                    /*
+                     You can implement here a condition that causes restoring the values
+                     or leave them as they are. Not restoring is actually a commit, so
+                     then 'preserve' can handle transactions.
+
+                     _context_->restore( <if rollback condition is met> ); // to commit, no restoring needs to be done.
+                     */
+
                 });
 #endif
       INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.restore()));
@@ -76,7 +87,7 @@ void preserve_demo_2(bool _fail)
         INFO("modified:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
 
         if ( _fail ) {
-            util::Throw_Error_Break("demontraing fail");
+            tu::ThrowBreak("demonstrating fail");
         }
 
         // no exceptions thrown, pseudo commit, by disabling the restore mechanism
@@ -158,7 +169,7 @@ void findIndex_demo()
 
 
     // search
-    util::findIndex( &found_index, newSymbol_and_nonParenKeywords);
+    tu::findIndex( &found_index, newSymbol_and_nonParenKeywords);
 
 
     INFO(VARVAL(found_index));
@@ -226,7 +237,7 @@ void info_demo()
 #   endif
 
 
-    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),VARCHRNUMHEX(highCtrl),VARVAL(b),123,0.123,!b);
+    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),tu::HGREEN,VARCHRNUMHEX(highCtrl),tu::NOCOLOR,VARVAL(b),123,0.123,!b);
 
     std::string alternative="Or write a ostream& operator << (ostream&,<your type>) operator for it.";
 
@@ -244,9 +255,9 @@ void info_demo()
     INFO("trivial.");
 
 #ifndef NDEBUG
-    util::info( std::endl< char, std::char_traits<char> > );
+    tu::info( std::endl< char, std::char_traits<char> > );
 
-    util::info( "Call info directly", "with util::info()", std::endl< char, std::char_traits<char> >
+    tu::info( "Call info directly", "with tu::info()", std::endl< char, std::char_traits<char> >
                 , aName, count, pcount, control);
 #endif
     INFO("Macro INFO is basically the the same but fades away in release mode ( defined(NDEBUG) )", ENDL );
@@ -254,14 +265,15 @@ void info_demo()
     INFO("With macros: Better format and consistent display of variable names.", ENDL,
          VARVAL(aName),VARVAL(count),VARVAL(control));
     INFO("PTR... macros print the address value of the pointer and the value on that address", ENDL,
-         PTRVALHEX(pcount),PTRVAL(pcount));
+         tu::HGREEN,PTRVALHEX(pcount),tu::NOCOLOR,PTRVAL(pcount));
     pcount= nullptr;
     INFO("INFO handles NULL pointers (nullptr) well",PTRVAL(pcount));
+    INFO(VARVAL(nullptr));
 
 
     INFO_TO(std::cerr);
 
-    INFO(VARVALHEX(ulonghex));
+    INFO("A hexadecimal value: ",tu::HGREEN,VARVALHEX(ulonghex),tu::NOCOLOR, "is decimal:",VARVAL(ulonghex));
     INFO("As number:  ", VARCHRNUM(control),
          "    And same again as hex number:  ", VARCHRNUMHEX(control));
     INFO("INFO produces raw output for intended debugging purposes ONLY without formatting.");
@@ -297,35 +309,35 @@ void info_demo()
 
     # if 0
       // control all settings locally, usefull if there are mulitple collections of settings to be managed, future save when more settings are added.
-      LOCAL_MODIFIED(util::AppliedInfoSettingsPtr);
-      util::InfoSettings mySettings;
+      LOCAL_MODIFIED(tu::AppliedInfoSettingsPtr);
+      tu::InfoSettings mySettings;
       mySettings.ostreamPtr= &Query1;
       mySettings.customQuote="\"";
-      util::AppliedInfoSettingsPtr= &mySettings;
+      tu::AppliedInfoSettingsPtr= &mySettings;
     # endif
 
     # if 1
       // Control settings that are changed, future save when more settings are added.
-      LOCAL_MODIFIED( util::AppliedInfoSettingsPtr->ostreamPtr
-                    , util::AppliedInfoSettingsPtr->customQuote
+      LOCAL_MODIFIED( tu::AppliedInfoSettingsPtr->ostreamPtr
+                    , tu::AppliedInfoSettingsPtr->customQuote
                     );
 
       # if 1
-      util::AppliedInfoSettingsPtr->ostreamPtr= &Query1;
+      tu::AppliedInfoSettingsPtr->ostreamPtr= &Query1;
       # else
       // deliberately corrupting to test/show STATEREPORT and validateFailed()
-      util::AppliedInfoSettingsPtr->ostreamPtr= nullptr;
+      tu::AppliedInfoSettingsPtr->ostreamPtr= nullptr;
       # endif
       # if 1
-      util::AppliedInfoSettingsPtr->customQuote="\"";
+      tu::AppliedInfoSettingsPtr->customQuote="\"";
       # else
       // deliberately corrupting to test/show STATEREPORT and validateFailed()
-      util::AppliedInfoSettingsPtr->customQuote="";
+      tu::AppliedInfoSettingsPtr->customQuote="";
       # endif
     # endif
 
       // no need for handling the validateFailed() outcome, that is done by the STATEREPORT macro.
-      if ( !STATEREPORT(util::AppliedInfoSettingsPtr->validateFailed()) ) {
+      if ( !STATEREPORT(tu::AppliedInfoSettingsPtr->validateFailed()) ) {
 
           INFO("select    *"
               ,"  from    tX, tY"
@@ -344,9 +356,6 @@ void info_demo()
     {
       INFO2STREAM( Query2
           ,"-- second, now acros multiple lines",ENDLINES(4)
-
-
-
 
           ,"select    *",ENDL
           ,"  from    tX, tY",ENDL
@@ -378,12 +387,12 @@ void STATEREPORT_demo()
 {
   {// extra local body
     #if 1
-    LOCAL_MODIFIED(util::stateReport_StreamPtr);
+    LOCAL_MODIFIED(tu::stateReport_StreamPtr);
     std::ofstream myStateReports("statereport.txt");
     ASSERT(myStateReports);                               // created stream must be valid to continue
-    util::stateReport_StreamPtr= &myStateReports;
+    tu::stateReport_StreamPtr= &myStateReports;
     // OR
-    //auto originalStreamPtr= util::stateReport_exchange_StreamPtr(&myStateReports);
+    //auto originalStreamPtr= tu::stateReport_exchange_StreamPtr(&myStateReports);
     #endif
 
 
@@ -420,7 +429,7 @@ void STATEREPORT_demo()
   //} to not ignore 0
   //{ selective reporting
     INFO(ENDL,"typical use");
-    for ( auto function_return_value : {-3,-2,-1,0,1,2,3} ) {
+    for ( auto function_return_value : {-3,-2,-1,0,1,2,3,4} ) {
         auto STATEREPORT_function_return_value= STATEREPORT(function_return_value,SR_EXCLUDE_0_AND(-2,1,3));  // _what is not specified, it defaults to 3 (same as 'a' or 'A')
         INFO(VARVAL(STATEREPORT_function_return_value));
         switch ( STATEREPORT_function_return_value ) {
@@ -441,37 +450,57 @@ void STATEREPORT_demo()
         }
     }
   //} selective reporting
-     //util::stateReport_exchange_StreamPtr(originalStreamPtr);
+     //tu::stateReport_exchange_StreamPtr(originalStreamPtr);
   }// extra local body
 
     // And now the stateReport_streamPtr is back
-    auto theEnd=[&]()
+    auto theEnd=[&](tu::state_t _val)
     {
-      return -2;
+      return _val;
       //return 0;
     };
     // if no STATEREPORT is issued when calling (lambda) function theEnd()
-    if ( !STATEREPORT(theEnd()) ) {
-      INFO("theEnd() returned 0, meaning: it succeed.");
+    if ( !STATEREPORT(theEnd(-1)) ) {
+        INFO("theEnd() returned 0, meaning: it succeed.");
+    }
+    if ( !STATEREPORT(theEnd(4)) ) {
+        INFO("theEnd() returned 0, meaning: it succeed.");
     }
 }
 
+void append_splitted_demo()
+{
+    std::string in("'12.2' 3");
+    std::vector<std::string> out;
+    INFO(VARVAL(in));
+    tu::state_t as=tu::append_splitted( &out, in," ");
+    STATEREPORT(as);
+    for( auto ostr:out ) INFO(VARVAL(ostr));
+}
 
 int main(int , char **)
 {
+#if 0
     INFO("Util demos");
     preserve_demo_0();
     preserve_demo_1();
     preserve_demo_2(/* _fail = */false );
     preserve_demo_2(/* _fail = */true );
-  #if 1
     findIndex_demo();
+#endif
+#if 0
     info_demo();
+#endif
+#if 1
     STATEREPORT_demo();
 
     LOCAL_MODIFIED();
     INFO("Do somesthing");
-  #endif
+#endif
+
+#if 0
+    append_splitted_demo();
+#endif
 
     return 0;
 }

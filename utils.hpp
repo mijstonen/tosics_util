@@ -1,16 +1,17 @@
+#pragma once
+//util.hpp
 ////////////////////
-#define BUILD_ALL 222222
+#define BUILD_ALL 1
 // BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
 // Touch , to force a rebuild all without make clean and also force ccache not to shortcut any way, make changes to
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,
 // as long it changes, increase it by one each time you request a complete rebuild makes sense.
 
+// #include <stdinc.hpp> has to be precompiled and passed the compiler with -include
 
-/// utils.h ///
 #ifndef UTILS_HPP_
 #define UTILS_HPP_ 1
 
-#include "stdinc.hpp"
 
 // Apply preprocessor options in Cmake
 // open configuration -> CMake -> Show advanced -> [x] Show Advanced Values
@@ -47,57 +48,13 @@
 /// always convert ASCI character nummerics to range 0..255
 #define CHAR2UINT_CAST(_CHR) static_cast<unsigned int>(static_cast<unsigned char>(_CHR))
 
+//:VSTRINGS
+/// @brief The equvalent of __STRING but for a variable number of arguments
+// VSTRINGS(a,b(c),d) produces "a,b(c),d"
+# define VSTRINGS(...) #__VA_ARGS__
 
-/** \def Properties
 
-New concept for properties
 
-Use fixed name conventions and decltype to extract the type from the name.
-
-class classname has property propertyname
-  Then the storing membername is m_propertyname
-  The getter declaration is decltype(m_propertyname) propertyname() const
-  The setter declaration is void propertyname(const decltype(m_propertyname)& _propertyname)  and
-
- There is no implementation definition (it is unwhise to make one, it surpasses the purpose of properties
-  to keep all invariants of the instance consistent. In the extreme case there is not even a implementation
-  storage for the property but is the property constructed from other instance members).
-
- But a bare getter only does
-  return m_propertyname
- And a bare setter only does
-  m_propertyname = _propertyname.
-
-  The following should be valid:
-    objectname.propertyname(objectname.propertyname());        // set object property to it self
-  So the getter returntype is the same as the setter input type.
-  Even if there is no decltype(objectname)::m_propertyname attribute, the methods are still considered property
-  setter and getter.
-
-  Definition:
-
-    A setter is a method that has a single input argument as its signature that will not be modified,
-    but the setter will mopdify the object up on which it is called. Multiple calls of a setter with the
-    same input value do not change the object again.  If it does, it is not a setter.
-
-    A getter is a method without a argument in its signature but returning a value (intended) type without
-    modification of the object uppon wich it is called. Multiple calls of a getter will result in the same
-    output value. If it does, it is not a getter.
-
-    Depricated and obsolete
-     get_propertname, set_propertyname.
-
-    Recomendation
-      Prefere to write methods as properties. But distinguish other methods (if they have no/single arg)
-      by clear descriptive naming.
-
-*/
-
-/// @brief  Give the signature for object data input by a setter with name: propertyname
-#define DECLARE_SETTER(propertyname) void propertyname(const decltype(m_##propertyname)& _##propertyname)
-
-/// @brief  Give the signature for object data output by a getter with name: propertyname
-#define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
 
 //:PACKED
 /// incapsulate gcc specific attribute __packed__
@@ -120,13 +77,6 @@ class classname has property propertyname
 //:END_OF
 /// get the first addres beyond the last possible item, analog to stl container end()
 #define END_OF(_C_array)                                 END_ADR(_C_array,ITEMS_IN(_C_array))
-
-/// get the first addres beyond the last possible item with given size, used in macro END_OF
-#define END_ADR(_C_array,_size)                          (_C_array+_size)
-
-/// get the first addres beyond the last possible item, analog to stl container end()
-#define END_OF(_C_array)                                 END_ADR(_C_array,ITEMS_IN(_C_array))
-
 
 //:BEGIN_MAIN
 /// Standard C++ scripting entry
@@ -212,10 +162,6 @@ class classname has property propertyname
 
 #endif  // DEBUG
 
-//:FAKE_USE
-/// compiler portable suppress "unused variable" warning
-#define FAKE_USE(_v) ((void)(_v))
-
 //:DROP_OUTPUT
 /**
  @brief Indicate that a optional actual output is not needed by the caller.
@@ -285,8 +231,6 @@ class classname has property propertyname
  */
 #define DROP_OUTPUT (nullptr)
 
-
-
 //:util
 /**
  @brief common utillity operations widely used in the source and often practical for any project
@@ -294,40 +238,54 @@ class classname has property propertyname
  These operations evolved over the years, not all of it might be usefull the specific project.
  util moves from project to project and more functionallity is gathered.
 */
-namespace util {
-// { SCX   stands for System Const eXPression.
+namespace tosics::util {
+    
+    // NOTE: Deliberately restricted to (most usefull) foreground coloring.
+    //       There are several ANSI console codes libraries for more sophisticated features.
+    constexpr char const* NOCOLOR = "\033[00m";
+
+    constexpr char const* RED = "\033[00;31m";
+    constexpr char const* YELLOW = "\033[00;33m";
+    constexpr char const* GREEN = "\033[00;32m";
+    constexpr char const* CYAN = "\033[00;36m";
+    constexpr char const* BLUE = "\033[00;34m";
+    constexpr char const* MAGENTA = "\033[00;35m";
+    constexpr char const* WHITE = "\033[00;37m";
+
+    constexpr char const* HRED = "\033[01;31m";
+    constexpr char const* HYELLOW = "\033[01;33m";
+    constexpr char const* HGREEN = "\033[01;32m";
+    constexpr char const* HCYAN = "\033[01;36m";
+    constexpr char const* HBLUE = "\033[01;34m";
+    constexpr char const* HMAGENTA = "\033[01;35m";
+    constexpr char const* HWHITE = "\033[01;37m";
+
+//{ SCX   stands for System Const eXPression.
 // Encapsulate system constants that trigger old-style-cast warnings.
 // They are allowed here because we do not alter system files
 // but no where else. THe name should be SCX_<orginal name>
 //
-//
-# pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-
-
 //:SCX_MAP_FAILED
-/// Same as MAP_FAILED but avoid old-style-cast warnings of the compiler
-constexpr const void* SCX_MAP_FAILED= MAP_FAILED;
-
-# pragma GCC diagnostic pop
-// } SCX
+/// Same as MAP_FAILED but avoid old-style-cast warnings of the compiler, instantiated in util.cpp
+extern const void* SCX_MAP_FAILED;
+//} SCX
 
 
-//:Throw_Error_Break
-/** @brief drop in replacement for a bare 'throw' expression to get a stack trace in a debugger during the exception
 
- @tparam[in] _e pass the exception of any Exception_T type
+// MT20170417, Some forward declarations/definitions, see statereport.hpp
+//  defined state_t and stateLiteralArg_t are new and might not be used everywhere, using long and int should work well
 
- Normally a exception hides the stack trace because it is unrolled the program is left at the catch handler.
- Putting a breakpoint on the catch handler is not (so) very usefull. But by wrapping each throw expression
- by this template function, you can use a debugger to display the stacktrace during the exception.
+//:state_t:// The CPU natuaral integer (can vary per processor, only use small(..est possible) values)
+using state_t = long;
 
- */
-template <typename Exception_T>
-void Throw_Error_Break(const Exception_T& _e)
+//:stateLiteralArg_t:// not passing a integer literal should be detected by the compiler (by using move semantics)
+using stateLiteralArg_t = state_t&&;
+
+//:State:// The intend is to make searches easy where a state is thrown or returned. Aka State(0) State(-1) State(12)
+    inline state_t
+State(stateLiteralArg_t _state )
 {
-/*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
-// NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
+    return _state;
 }
 
 /**
@@ -373,13 +331,37 @@ size_t align_size_to_multi_min( size_t _size_, size_t const& _min);
          practice there are many people, sources, libraries, packages and so on that use diffent approaches and they
          are mixed, combined and used. Sometimes more or less standard or ambigious.
          Type conversion so become fact of live. And this makes living a bit easier.
+
+ @example
+        tosics::util::setFileSize(...)
+        {
+        ...
+            auto wr= write( _fd, "", 1);
+            if ( wr< static_to_type_cast(wr,0) ) {
+        ...
+        }
  */
-template<typename to_T, typename from_T>
-inline
-to_T static_to_type_cast(to_T _toInstance, from_T _fromInstance)
+    template<typename to_T, typename from_T>
+    inline to_T
+static_to_type_cast(to_T _toInstance, from_T _fromInstance)
 {
-    return static_cast<decltype(_toInstance)>( _fromInstance);
+    return static_cast<decltype(_toInstance)> ( _fromInstance );
 }
+    template <typename T>
+    bool
+Is_null (T _ptr)
+{
+    return ( _ptr ? false: true );
+}
+
+#if 0
+template <>
+inline
+bool Is_null<std::nullptr_t>(std::nullptr_t _ptr)
+{
+    return true;
+}
+#endif
 
 //:setFileSize
 /**
@@ -403,7 +385,7 @@ to_T static_to_type_cast(to_T _toInstance, from_T _fromInstance)
 */
 int setFileSize( int _fd, size_t _size, bool _grow=true);
 
-//: findIndex
+//:findIndex
 /**
  @brief Find index (in reverse order) of strings in a array, to apply switch i.s.o long 'if else if' list.
  @param[in,out] _NumberOfItems_in_indexOut_ in: Number of items in the array (see below),
@@ -432,7 +414,7 @@ int setFileSize( int _fd, size_t _size, bool _grow=true);
 
   ?
 
-  1. create a array kind of list of items
+  1. create a (constexpr local c array) kind of list of items
   2. put the item to search for as first  (items[0])
   3  Declare a int and initialize from from ITEMS_IN(items)
   4  Call findIndex
@@ -443,22 +425,442 @@ int setFileSize( int _fd, size_t _size, bool _grow=true);
         aka (small) (programing) language parsing.
 
  @sa util_demos.cpp:findIndex_demo()
-  
+
  @return 0 if _text[0] is not found in _texts[1]..._texts[ITEMS_IN(texts)-1]
            or 1..ITEMS_IN(texts)-1 when found.
 */
-
     inline void
 findIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
 {
     ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found hast to be on _texts[0]
 
-    register auto item_to_be_found= _texts[0];
-    while  ( strcmp( _texts[--( *_NumberOfItems_in_indexOut_ )], item_to_be_found ) );
+    const char* item_to_be_found= _texts[0];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wempty-body"  // for clang++
+    while  ( strcmp( _texts[--( *_NumberOfItems_in_indexOut_ )], item_to_be_found ) ){
+        // DBG_INFO(VARVAL(_NumberOfItems_in_indexOut_)); FAKE_USE(_NumberOfItems_in_indexOut_);
+    };
+#pragma GCC diagnostic pop
 
     ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
 }
 
+char const* datetime();
 
-} //namespace util
+    void
+info_main_args(int argc, char const* argv[]);
+
+#define SHOW_ARGS info_main_args(argc,argv)
+
+#define MAX_BT_BUFS 100
+
+enum eBreakCategory : int
+/* examples, customize */
+{ eBC_default,
+    eBC_signal,
+    eBC_io,
+    eBC_ui,
+    eBC_service,
+    eBC_aync,
+    eBC_assertion_failed,
+    eBC_fatal,
+    eBC_handled
+};
+
+void DumpBacktraceInFileStream(int backtrace_output_filehandle_ = STDERR_FILENO);
+
+
+//@{ to be moved to separate unit
+//:ThrowBreak:// Use it i.s.o. naked throw and put breakpoints in it and see full backtrace in debugger
+    template <typename EXCEPTION_T>
+    [[ noreturn ]] void
+ThrowBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default)
+{
+    const std::set<eBreakCategory> NoBacktraceCategory{ eBC_handled };
+
+    if (NoBacktraceCategory.find(_break_category) == NoBacktraceCategory.end()) {
+
+        // display enummeration name
+        char const *break_category_name="eBC_?????";
+#define throwBreak_EBC(_NAME) case _NAME: break_category_name= __STRING(_NAME); break
+        switch (_break_category) {
+            throwBreak_EBC(eBC_default);                 //
+            throwBreak_EBC(eBC_signal);                  // put a breakpoint
+            throwBreak_EBC(eBC_io);                      // on one of
+            throwBreak_EBC(eBC_ui);                      // these lines
+            throwBreak_EBC(eBC_service);                 //
+            throwBreak_EBC(eBC_aync);
+            throwBreak_EBC(eBC_assertion_failed);
+            throwBreak_EBC(eBC_handled);
+            throwBreak_EBC(eBC_fatal);
+        }
+#undef throwBreak_EBC
+        std::cerr<< std::endl<< HRED << __PRETTY_FUNCTION__
+                 << " break_category_name: '"<< break_category_name
+                 << "'    dumping stacktrace!"
+                 << NOCOLOR<<std::endl
+                 ;
+        DumpBacktraceInFileStream(STDERR_FILENO);
+    }
+    throw _exception;
+}
+
+//:ThrowEvent:// Use when a exception represents controlflow i.s.o. error.
+    template <typename EVENT_EXCEPTION_T>
+    [[ noreturn ]] void    
+ThrowEvent(EVENT_EXCEPTION_T event_exception_)
+{
+    // EXTENSION?: pass event to listners
+    throw event_exception_;
+}
+
+    //:ASJ_special:// options for append_splitted() and append_joined() to handle custom situations
+struct ASJ_special
+{
+    bool m_allow_empty=true;
+    std::string m_up=  "([<{";
+    std::string m_down=")]>}";
+    std::string m_ignorers="'\"";
+};
+
+//:append_splitted:// For VARVALS implementation, to split string with arguments
+//@{ 3 overloads
+    template <typename CONTAINER_T = std::vector<std::string> >
+    state_t
+append_splitted( CONTAINER_T* strs_, std::string const& _str
+                       , char const* _seps = ","
+#if 1  // 0 for clang workarround
+                       , std::experimental::optional<ASJ_special> const& _optAsj=
+                                                    std::experimental::optional<ASJ_special>()
+#endif
+               )
+{
+    // std::cout<<HBLUE<<"Taking optional ASJ"<<NOCOLOR<<std::endl;
+    if (!strs_) {
+        // strs_ output is mandatory and to be modified without further checks
+        return State(-1);
+    }
+    char const*  pc = _str.c_str();
+    if (!pc) {
+        // pc must be valid to perform
+        return State(-2);
+    }
+    if (!*pc) {
+        // no input to split, but result is valid because nothing would change,
+        // however: no input possibly is not intended
+        return State(1);
+    }
+
+    char const*  start = pc; // [start...pc> is range of chars copied
+
+    // control defaults
+    bool allow_empty = true;
+    char const* up   = "([<{";
+    char const* down = ")]>}";
+    char const* ignorers = "'\"";
+    constexpr const char QUOTER = '\\';
+    // optionally, initialize from control info
+#if 1   // 0 for disable as workaround for clang
+    if ( _optAsj ) {
+        allow_empty = _optAsj->m_allow_empty;
+        up = _optAsj->m_up.c_str();
+        down = _optAsj->m_down.c_str();
+        ignorers = _optAsj->m_ignorers.c_str();
+    }
+#endif
+    if ( strlen(up)!= strlen(down) ) {
+        // length of up and down need to be equal, they are not!
+        return State(-5);
+    }
+    using index_type = decltype(strlen(""));
+    index_type pair_index = strlen(up)+1;
+    std::vector<index_type> pi_stack;  // Pair Index Stack
+
+    //:find:// predicate to offset_ OF _item IN _items, returns true if found otherwise false
+        auto 
+    find = [](index_type * offset_, char _item, char const* _items) -> bool
+    {
+        char const* found;
+        found = strchr(_items, _item);
+        if (found) {
+            *offset_ = found - _items;
+            return true;
+        }
+        return false;
+    };
+
+    //:maybe_append_strs_from_str_substr:// ..., when allow_empty is false then a empty substring is not added
+        auto 
+    maybe_append_to_strs_from_str_substr = [&]() -> void
+    {
+        auto substr_len = pc - start;
+        if ( allow_empty|| substr_len ) {
+            strs_->emplace_back();
+            std::string& newStrRef= strs_->back();
+            // Copy each char but without (single) QUOTER
+            for( char const* i=start; i<pc; ++i ) {
+                if ( QUOTER == *i ) {
+                    if ( i<=start ) {
+                        continue;
+                    }
+                    if ( QUOTER != *(i-1) ) {
+                        continue;
+                    }
+                }
+                ASSERT(*i);
+                newStrRef+= *i;
+            }
+        }
+    };
+    
+    //:next:// ignore split syntax within ignorers  (aka 'a,b(c,d),e' => 'a,b(c,d),e' i.s.o  a | b(c,d) | e)
+        auto 
+    next=[ignorers](char const*& _pc_) -> state_t
+    {
+        for(unsigned cnt=0;*_pc_;++cnt) {
+            char const* pIgnorer= strchr( ignorers, *_pc_);
+            if ( !pIgnorer ) { 
+                if ( !cnt ) {
+                    ++_pc_;
+                }
+                break;
+            }
+                
+            // entering ignoring state, skip all till after terminator
+            char terminator= *pIgnorer;
+            do      {
+                if ( !*++_pc_ ) {
+                    return State(-1); // termination by '\0'  aka: some unterminated string / unmatched ignorer
+                }
+            }
+            while (  ( *_pc_ )!= terminator || *( _pc_ -1 )== QUOTER );
+            ++_pc_;
+        }
+        return State(0); // normall iteration, no ignorer detected
+    };
+
+    while ( *pc ) {
+        if (find(&pair_index,  *pc,  up)) {
+            pi_stack.push_back(pair_index);
+        }
+        else if (   pi_stack.size()
+               &&   find(&pair_index,  *pc, down)
+               && ( pair_index == pi_stack.back() ) )
+        {
+            pi_stack.pop_back();
+        }
+        if ( !pi_stack.size() && strchr(_seps, *pc) ) {
+            // match found with a separator
+            maybe_append_to_strs_from_str_substr();
+            //start = pc+1;
+            start=pc;
+            next(start);
+        }
+        if ( next(pc) ) {
+            return State(-6);
+        }
+    } // while *pc
+    // last word preceeds  '\0' termination of _txt
+    maybe_append_to_strs_from_str_substr();
+
+    if (pi_stack.size()) {
+        // Possibly unintended result, encapsulation is symetric chars are not matching
+        return State(-4);
+    }
+    // succeeded
+    return State(0);
+}
+    template <typename CONTAINER_T = std::vector<std::string> >
+    state_t
+append_splitted( CONTAINER_T* strs_, std::string const& _str, char const* _seps, ASJ_special const& _asj )
+{
+    // std::cout<<HGREEN<<"Wrapped ASJ"<<NOCOLOR<<std::endl;
+    return append_splitted( strs_, _str, _seps, std::experimental::make_optional(_asj));
+}
+    template <typename CONTAINER_T = std::vector<std::string> >
+    state_t
+append_splitted( CONTAINER_T* strs_, std::string const& _str, ASJ_special const& _asj )
+{
+    // std::cout<<HGREEN<<"2nd Wrapped ASJ"<<NOCOLOR<<std::endl;
+    return append_splitted( strs_, _str, ",", _asj);
+}
+
+//@} 3 overloads
+
+//:append_joined:// Inverse of append_splitted
+    template <typename CONTAINER_T=std::vector<std::string> >
+    state_t
+append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr=" ")
+{
+    state_t return_value=State(0);
+    if ( !_strs.size() ) {
+        return State(1);     // no input to join, but result is valid because nothing would change,
+        // however: no input possibly is not intended
+    }
+    // HERE: _strs.size >= 1
+    if ( !txt_ ) {
+        return State(-1);    // providing txt_ output pointer is mandatory
+    }
+    const size_t sep_size= strlen(_sepStr);
+    if ( !sep_size ) {
+        // Possibly unintended zero length separator, so strings are not separated
+        return_value=State(2);
+    }
+    constexpr size_t RESEVERD_EXTRA=4; // relax boundaries, guarantees that reserved > needed
+    size_t destr_start_len=txt_->size();
+    size_t destr_len=RESEVERD_EXTRA+destr_start_len;
+    for(auto str: _strs){
+        destr_len+= sep_size; // for sep
+        destr_len+= str.size();
+    }
+    txt_->reserve( destr_len);
+
+    if ( destr_start_len>0 ) {
+        // assume destr_ has 1 or more priviously joined items and separate following strings by _sep
+        txt_->append( _sepStr);
+    }
+    auto i_of_last_str= _strs.size() - 1;
+    for ( decltype(i_of_last_str) i=0; i<i_of_last_str; ++i){
+        txt_->append( _strs[i]);
+        txt_->append( _sepStr);
+    }
+    // join last string, not followed by separator
+    txt_->append(_strs[i_of_last_str]);
+
+    return return_value;
+}
+    template <typename CONTAINER_T=std::vector<std::string> >
+    state_t 
+append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
+{
+    std::string sepStr={_sepChr};
+    return append_joined(txt_,_strs,sepStr.c_str());
+}
+//@} to be moved to separate unit
+
+    template<typename Last_T>
+    inline void
+fake_use( Last_T const& /*_last*/)
+{
+    //(void)( _last);
+}
+    template<typename First_T, typename... Remaining_T>
+    inline void
+fake_use( First_T const& _first, Remaining_T const&... _remaining)
+{
+    fake_use( _first);
+    fake_use( _remaining...);
+}
+
+extern std::vector<std::string> ProgramArguments;
+void Info_ProgramArguments();
+void On_signal(int _signal);
+void Initialize(int _argC, char const* _argV[]);
+// For now: Allow to use old name.
+#define ShowArgs info_ProgramArguments
+
+//:__TU_FS:// Single and short replacement, namespace alias bad if used in header. Local to declarations here.
+#define __TU_FS std::experimental::filesystem
+state_t FileInPATH ( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
+std::time_t pathWriteTime( __TU_FS::path _path);
+state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
+#undef __TU_FS
+
+
+//TODO:
+// bool newer(const char* _leftfile, const char* _rightfile, bool return_on_fail)  // same as in c++shx.cpp except it should use std::experimental::filesystem
+//
+
+} //namespace tosics::util
+
+//:FAKE_USE
+/// compiler portable suppress "unused variable" warning
+#define FAKE_USE(...) tosics::util::fake_use(__VA_ARGS__)
+
+
+/**********************************************************************************************************************/
+/*************************************** BROKEN OR DEPRICATED *********************************************************/
+/**********************************************************************************************************************/
+// Despite of bein broken or deprecated, some remain in the library because they where used elsewhere and/or
+// state certain concepts that remain alive.
+//
+
+/** \def Properties
+
+New concept for properties
+
+Use fixed name conventions and decltype to extract the type from the name.
+
+class classname has property propertyname
+  Then the storing membername is m_propertyname
+  The getter declaration is decltype(m_propertyname) propertyname() const
+  The setter declaration is void propertyname(const decltype(m_propertyname)& _propertyname)  and
+
+ There is no implementation definition (it is unwhise to make one, it surpasses the purpose of properties
+  to keep all invariants of the instance consistent. In the extreme case there is not even a implementation
+  storage for the property but is the property constructed from other instance members).
+
+ But a bare getter only does
+  return m_propertyname
+ And a bare setter only does
+  m_propertyname = _propertyname.
+
+  The following should be valid:
+    objectname.propertyname(objectname.propertyname());        // set object property to it self
+  So the getter returntype is the same as the setter input type.
+  Even if there is no decltype(objectname)::m_propertyname attribute, the methods are still considered property
+  setter and getter.
+
+  Definition:
+
+    A setter is a method that has a single input argument as its signature that will not be modified,
+    but the setter will modify the object up on which it is called. Multiple calls of a setter with the
+    same input value do not change the object again.  If it does, it is not a setter.
+
+    A getter is a method without a argument in its signature but returning a value (intended) type without
+    modification of the object uppon wich it is called. Multiple calls of a getter will result in the same
+    output value. If it does, it is not a getter.
+
+    Deprecated and obsolete
+     get_propertname(), set_propertyname(arg). Use propertyname() and propertyname(arg).
+
+    Recomendation
+      Prefere to write methods as properties. But distinguish other methods (if they have no/single arg)
+      by clear descriptive naming.
+
+*/
+/// @brief  Give the signature for object data input by a setter with name: propertyname
+// BROKEN: should not asume existance of m_##propertyname. But stick to this signature for a setter.
+//         decalaration cannot be generalized, it differs per class and per property.
+//         So far (2017-05) only preserve depended on it, so those property methods are declared natively instead.
+// #define DECLARE_SETTER(propertyname) void propertyname(const decltype(m_##propertyname)& _##propertyname)
+
+/// @brief  Give the signature for object data output by a getter with name: propertyname
+// BROKEN: See ex[planation at DECLARE_SETTER
+// #define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
+
+//:Throw_Error_Break
+/**
+@deprecated
+Use template <typename EXCEPTION_T>
+void throwBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default) instead.
+
+@brief drop in replacement for a bare 'throw' expression to get a stack trace in a debugger during the exception
+
+ @tparam[in] _e pass the exception of any Exception_T type
+
+ Normally a exception hides the stack trace because it is unrolled the program is left at the catch handler.
+ Putting a breakpoint on the catch handler is not (so) very usefull. But by wrapping each throw expression
+ by this template function, you can use a debugger to display the stacktrace during the exception.
+
+ */
+    template <typename Exception_T>
+    void
+Throw_Error_Break(const Exception_T& _e)
+{
+/*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
+// NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
+}
+
+
 #endif //UTILS_HPP_

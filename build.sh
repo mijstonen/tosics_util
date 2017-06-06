@@ -16,17 +16,19 @@
 # See also:  compile-alias
 #
 
+TARGET=$1
+
 build_in_other_dir()
 {
-  cd ../util_build
-  make VERBOSE=1
+  cd ../build/util
+  VERBOSE=1 ninja -v -j 8  $1
   ls -lrth --full-time --color=always
   cd -
 }
 
 BUILDLOG="build-$(timestamp).log"
-build_in_other_dir 2>&1 | tee $BUILDLOG
-less $BUILDLOG
+build_in_other_dir $TARGET 2>&1 | tee $BUILDLOG
+less -R $BUILDLOG
 ls -lrth build*.log | tail
 
 

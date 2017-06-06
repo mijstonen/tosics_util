@@ -1,22 +1,22 @@
-/// -*- C++ -*- file: stdinc.h ///
+/// -*- C++ -*- file: stdinc.hpp  ///
 
 #ifndef STDINC_H_
 #define STDINC_H_ 1
 #define _GLIBCXX_USE_NANOSLEEP
 
-#define DEBUG_TRACE 1
-#include <trace.h>
-
 #if 1 // C basic (with *.h)
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <execinfo.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #endif
 
 #if 1 // C enclosed (with cstd*)
 #include <cstdint>
+#include <cmath>
 #include <cstdlib>
 #include <cstddef>
 #include <cstdarg>
@@ -51,13 +51,16 @@
 #if 1 // C++ stl minimum
 #include <algorithm>
 #include <vector>
-#include <utility>
+#include <iterator>
+// #include <experimental/any>
 #endif
 
 #if 1 // C++ stl
 #include <memory>
 #include <bitset>
 #include <iterator>
+#include <array>
+#include <set>
 #include <map>
 #include <stack>
 #include <queue>
@@ -65,22 +68,36 @@
 #include <list>
 #endif
 
-#if 0 // C++ math
+#if 0// C++ math
 #include <complex>
+#include<valarray>
 #endif
 
-// C++0x
-#include <type_traits>
-#if 0
+#if 0 // C++ZZ
 #include <tuple>
 #include <regex>
 #include <thread>
 #include <chrono>
+#include <type_traits>
 #include <functional>
 #endif
 
+#if 1 // practical adhock desires
+#include <type_traits>
+#include <experimental/filesystem>
+#include <experimental/optional>
+#include <boost/current_function.hpp>
+#endif
 
+#if 0 // get missing pieces from boost
+#include <boost/circular_buffer.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/any.hpp>
+#endif
 
+#if 0 // also include all the goodies of chai
+#include <chaiscript/chaiscript.hpp>
+#endif
 /*
 ________________________________________________________________________________________________________________________
 
@@ -94,7 +111,7 @@ ________________________________________________________________________________
 
  and used as
 
-    g++ -Wall -std=c++0x -include stdinc.h "$COMMON_OPTIONS"<sources> ....
+    g++ -Wall -std=c++1z -include stdinc.hpp "$COMMON_OPTIONS"<sources> ....
 
  where the <sources> not need to include  stdinc.h and none of its enlisted files (and possibly more)
  This saves compilation time and development time for most applications, because time required to

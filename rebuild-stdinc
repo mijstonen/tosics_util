@@ -1,4 +1,9 @@
-# rm stdinc.h.gch   # optional
- 
-inc2gch stdinc.hpp
+rm stdinc.hpp.gch   # optional / for testing
 
+# files and directories / depended settings
+PRJ_PARENT_DIR="/home/michel/Projects/Kdevelop/"
+ UTILS_INCLUDES_DIR="${PRJ_PARENT_DIR}util/"
+
+cd "${UTILS_INCLUDES_DIR}"
+inc2gch stdinc.hpp
+cd -

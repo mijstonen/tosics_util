@@ -1,7 +1,9 @@
+#pragma once
+//statereport.hpp
 #ifndef STATEREPORT_H_
 #  define STATEREPORT_H_ 1
 
-#include "utils.hpp"
+#include "util.hpp"
 #include "info.hpp"
 #include "preserve.hpp"
 #include "error.hpp"
@@ -27,14 +29,15 @@
  The name of the function or method will alwas be shown during the reported state.
 */
 
+namespace tosics::util {
 
-namespace util {
-//:STATEREPORT
+    //:STATEREPORT
 /**
  \def STATEREPORT
 
  @brief debugging aid to have a standard way to report any uncontrolled and unexpected return state of a low(er)
-        level called function.
+        level called function. Particular to check anyway in cases where normally you would ignore error or warning
+        states by function return values.
 
   STATEREPORT(  _CALL  {,exclusions} {,int/char _what})
 
@@ -50,8 +53,8 @@ namespace util {
  @param [in] _what  (optional) choose what to report, in all cases; except what is in the exclusions list
   - 0 'q' 'Q'  report nothing
   - 1 'n' 'N'  only report notifications (positive return statements)
-  - 2 'e' 'E'  only report errors (negative reurn statements)
-  - 3 'a' 'A'  report all, note that this is used rarely explicitly because if what is ommited then 3 is assumed
+  - 2 'e' 'E'  only report errors (negative return statements)
+  - 3 'a' 'A'  report all, note that this is used rarely explicitly because if _what is ommited then 3 is asumed
 
  @sa SR_EXCLUDE_ALL SR_EMPTY_INITIALISATION_LIST SR_ZERO_IS_SUCCESS SR_EXCLUDE_0_AND SR_ENABLE SR_DEBUG
 
@@ -222,7 +225,7 @@ namespace util {
  Help @e ismpl to instrument correctly by avoiding '{' and '}' in the actual exclusion list during the
  use of STATEREPORT
 */
-#  define SR_EXCLUDE_ALL(...) std::vector<long>({ __VA_ARGS__ })
+#  define SR_EXCLUDE_ALL(...) std::vector<tosics::util::state_t>({ __VA_ARGS__ })
 
 
 //:SR_EMPTY_INITIALISATION_LIST
@@ -274,9 +277,9 @@ namespace util {
  @param _what  0, 1, 2  or  3  (default=3 meaning report everything)
  @warning Do not call __stateReport() directly ( that is why the name starts with __ )  use macro STATEREPORT
 */
-    long
-__stateReport( long _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller
-             , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
+    state_t
+__stateReport( state_t _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, char const* _caller
+             , std::vector<state_t> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 
 
@@ -296,8 +299,8 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
  @param _what  0, 1, 2  or  3  (default=3 meaning report everything)
  @warning Do not call __stateReport() directly ( that is why the name starts with __ ) use macro STATEREPORT
 */
-    inline long
-__stateReport( long _return_state_of_call_, char const* _callee, char const* _file, unsigned _line
+    inline state_t
+__stateReport( state_t _return_state_of_call_, char const* _callee, char const* _file, unsigned _line
                         , char const* _caller, int _what)
 {
     return __stateReport( _return_state_of_call_, _callee, _file, _line, _caller, SR_ZERO_IS_SUCCESS, _what);
@@ -308,7 +311,7 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
 
 
 #      define STATEREPORT(_CALL,...) \
-          util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
+          tosics::util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
 
 
 
@@ -328,9 +331,9 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _fi
 
  @warning Do not call __stateReport() directly ( that is why the name starts with __ ) use macro STATEREPORT
 */
-    long
-__stateReport( long _return_state_of_call_, char const* _callee, char const* _caller
-             , std::vector<long> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
+    state_t
+__stateReport( state_t _return_state_of_call_, char const* _callee, char const* _caller
+             , std::vector<state_t> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 
 
@@ -345,8 +348,8 @@ __stateReport( long _return_state_of_call_, char const* _callee, char const* _ca
  @sa STATEREPORT
  @warning Do not call __stateReport() directly ( that is why the name starts with __ )  use macro STATEREPORT
 */
-    long inline
-__stateReport(  long _return_state_of_call_, char const* _callee, char const* _caller,int _what)
+    state_t inline
+__stateReport(  state_t _return_state_of_call_, char const* _callee, char const* _caller,int _what)
 {
     return __stateReport( _return_state_of_call_, _callee, _caller, SR_ZERO_IS_SUCCESS, _what);
 }
@@ -355,7 +358,7 @@ __stateReport(  long _return_state_of_call_, char const* _callee, char const* _c
 
 
 
-#      define STATEREPORT(_CALL,...) util::__stateReport(_CALL, #_CALL, __PRETTY_FUNCTION__,##__VA_ARGS__)
+#      define STATEREPORT(_CALL,...) tosics::util::__stateReport(_CALL, #_CALL, __PRETTY_FUNCTION__,##__VA_ARGS__)
 #    endif // SR_DEBUG
 
 
@@ -387,12 +390,6 @@ std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPt
 #  else // no SR_ENABLE
 #    define STATEREPORT(_CALL,...) _CALL
 #  endif // SR_ENABLE
-
-
-
-
-
-
 
 } //namespace util
 

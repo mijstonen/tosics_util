@@ -1,4 +1,4 @@
 [Project]
-Name=util
+CreatedFrom=CMakeLists.txt
 Manager=KDevCMakeManager
-VersionControl=kdevgit
+Name=util

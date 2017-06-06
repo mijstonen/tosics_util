@@ -1,20 +1,41 @@
 #!/bin/sh
-# Make a snapshot archive of qnode
-cd ~/Projects/Kdevelop
-mv util20[0-9][0-9]-*.txz ~/Archives/snapshots 2>/dev/null
-TAR_ARGS="-Jcv
-    --exclude-backups
-    --exclude=*~
-    --exclude=\#*
-    --exclude=*.gch
-    --exclude=*.txz
-    --exclude=util/.seqintra/logs/*
+# Make a snapshot archive of SeqIntra
 
-    --exclude-vcs
+PROJECT=$(basename $(dirname $(readlink -e $0)));
+if [ "$?" -ne 0 ]
+then
+     echo "scriptname: $0  could not extract PROJECT from it" 1>&2
+     exit 1
+fi
+#echo "arg0: $0"
+#echo $PROJECT
+#exit 0
 
-    -f util$(timestamp).txz util/
-" #TAR_ARGS
+ARCH_NAME="${PROJECT}$(timestamp)"
 
+cd ~/Projects/Kdevelop/
+mv ${PROJECT}20[0-9][0-9]-*.txz ~/Archives/snapshots
+
+
+TAR_ARGS="
+-Jcv
+--exclude-backups
+--exclude=*~
+--exclude=\#*
+--exclude=*.gch
+--exclude=*.txz
+--exclude=*.o
+--exclude-vcs
+--exclude=*/Debug/*
+--exclude=*/logs/*
+--exclude=build/*
+
+
+-f ${ARCH_NAME}.txz ${PROJECT}/
+"
+# echo $TAR_ARGS
+# exit 0
 tar $TAR_ARGS
-ls -l util20[0-9][0-9]-*.txz
+pwd
+ls -lh ${PROJECT}20[0-9][0-9]-*.txz
 cd -

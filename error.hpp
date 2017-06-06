@@ -1,15 +1,17 @@
+#pragma once
+//error.hpp
 #ifndef ERROR_HPP_
 #define ERROR_HPP_ 1
 
-//#include "utils.hpp"
-//#include "info.hpp"
+#include "util.hpp"
+#include "info.hpp"
 #include "preserve.hpp"
 
 
 
-namespace util {
+namespace tosics::util {
 
-/// Variadic template cerror() debugging helper
+//:info2stream:// Variadic template cerror() debugging helper
     template<typename stream_T, typename... Args_T>
     void
 info2stream(stream_T& _stream, const Args_T&... _args)
@@ -19,7 +21,7 @@ info2stream(stream_T& _stream, const Args_T&... _args)
     info( _args...);
 }
 
-/// Variadic template cerror() debugging helper
+//:cerror:// Variadic template cerror() debugging helper
     template<typename... Args_T>
     void
 cerror(const Args_T&... _args)
@@ -55,7 +57,7 @@ Error_close( int _fd, std::string _perrormsg )
 // enable/disable debug helper info()
 #if 1
 /// enabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-# define CERROR(...) util::cerror(__VA_ARGS__)
+# define CERROR(...) tosics::util::cerror(__VA_ARGS__)
 #else
 /// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
 # define CERROR(...)
@@ -77,7 +79,7 @@ Error_close( int _fd, std::string _perrormsg )
 # define ALDBG_CERROR(...)
 #endif
 
-#define INFO2STREAM util::info2stream
+#define INFO2STREAM tosics::util::info2stream
 
 
 #endif // ERROR_HPP_
