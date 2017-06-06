@@ -27,10 +27,10 @@ functionality is weak.
 
 Related projects
 ----------------
-treenode :  util was born out of it. Treenode is a specialized key-value
+qnode   :  util was born out of it. Treenode is a specialized key-value
             database.
 
-cpx      :  cpx (ComPile and eXecute) is build on top of util, meanwhile it is
+cpx     :   cpx (ComPile and eXecute) is build on top of util, meanwhile it is
             used to prototype and test functionality being implemented in util.
             Cpx lets you run C++ as a script, fast prototyping and do
             high order metaprogramming.
