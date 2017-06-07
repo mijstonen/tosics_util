@@ -239,7 +239,7 @@
  util moves from project to project and more functionallity is gathered.
 */
 namespace tosics::util {
-    
+
     // NOTE: Deliberately restricted to (most usefull) foreground coloring.
     //       There are several ANSI console codes libraries for more sophisticated features.
     constexpr char const* NOCOLOR = "\033[00m";
@@ -309,7 +309,7 @@ State(stateLiteralArg_t _state )
 \endcode
 */
 
-size_t align_size_to_multi_min( size_t _size_, size_t const& _min);
+size_t AlignSizeToMultiMin ( size_t _size_, size_t const& _min);
 
 
 //:static_to_type_cast
@@ -383,9 +383,9 @@ bool Is_null<std::nullptr_t>(std::nullptr_t _ptr)
 
  @sa man lseek(2)
 */
-int setFileSize( int _fd, size_t _size, bool _grow=true);
+int SetFileSize ( int _fd, size_t _size, bool _grow=true);
 
-//:findIndex
+//:FindIndex
 /**
  @brief Find index (in reverse order) of strings in a array, to apply switch i.s.o long 'if else if' list.
  @param[in,out] _NumberOfItems_in_indexOut_ in: Number of items in the array (see below),
@@ -430,7 +430,7 @@ int setFileSize( int _fd, size_t _size, bool _grow=true);
            or 1..ITEMS_IN(texts)-1 when found.
 */
     inline void
-findIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
+FindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
 {
     ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found hast to be on _texts[0]
 
@@ -445,10 +445,10 @@ findIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
     ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
 }
 
-char const* datetime();
+char const* DateTime();
 
     void
-info_main_args(int argc, char const* argv[]);
+Info_main_args (int argc, char const* argv[]);
 
 #define SHOW_ARGS info_main_args(argc,argv)
 
@@ -507,14 +507,14 @@ ThrowBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default)
 
 //:ThrowEvent:// Use when a exception represents controlflow i.s.o. error.
     template <typename EVENT_EXCEPTION_T>
-    [[ noreturn ]] void    
+    [[ noreturn ]] void
 ThrowEvent(EVENT_EXCEPTION_T event_exception_)
 {
     // EXTENSION?: pass event to listners
     throw event_exception_;
 }
 
-    //:ASJ_special:// options for append_splitted() and append_joined() to handle custom situations
+    //:ASJ_special:// options for Append_splitted() and Append_joined() to handle custom situations
 struct ASJ_special
 {
     bool m_allow_empty=true;
@@ -527,7 +527,7 @@ struct ASJ_special
 //@{ 3 overloads
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
-append_splitted( CONTAINER_T* strs_, std::string const& _str
+Append_splitted( CONTAINER_T* strs_, std::string const& _str
                        , char const* _seps = ","
 #if 1  // 0 for clang workarround
                        , std::experimental::optional<ASJ_special> const& _optAsj=
@@ -577,7 +577,7 @@ append_splitted( CONTAINER_T* strs_, std::string const& _str
     std::vector<index_type> pi_stack;  // Pair Index Stack
 
     //:find:// predicate to offset_ OF _item IN _items, returns true if found otherwise false
-        auto 
+        auto
     find = [](index_type * offset_, char _item, char const* _items) -> bool
     {
         char const* found;
@@ -590,7 +590,7 @@ append_splitted( CONTAINER_T* strs_, std::string const& _str
     };
 
     //:maybe_append_strs_from_str_substr:// ..., when allow_empty is false then a empty substring is not added
-        auto 
+        auto
     maybe_append_to_strs_from_str_substr = [&]() -> void
     {
         auto substr_len = pc - start;
@@ -612,20 +612,20 @@ append_splitted( CONTAINER_T* strs_, std::string const& _str
             }
         }
     };
-    
+
     //:next:// ignore split syntax within ignorers  (aka 'a,b(c,d),e' => 'a,b(c,d),e' i.s.o  a | b(c,d) | e)
-        auto 
+        auto
     next=[ignorers](char const*& _pc_) -> state_t
     {
         for(unsigned cnt=0;*_pc_;++cnt) {
             char const* pIgnorer= strchr( ignorers, *_pc_);
-            if ( !pIgnorer ) { 
+            if ( !pIgnorer ) {
                 if ( !cnt ) {
                     ++_pc_;
                 }
                 break;
             }
-                
+
             // entering ignoring state, skip all till after terminator
             char terminator= *pIgnorer;
             do      {
@@ -672,14 +672,14 @@ append_splitted( CONTAINER_T* strs_, std::string const& _str
 }
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
-append_splitted( CONTAINER_T* strs_, std::string const& _str, char const* _seps, ASJ_special const& _asj )
+Append_splitted( CONTAINER_T* strs_, std::string const& _str, char const* _seps, ASJ_special const& _asj )
 {
     // std::cout<<HGREEN<<"Wrapped ASJ"<<NOCOLOR<<std::endl;
     return append_splitted( strs_, _str, _seps, std::experimental::make_optional(_asj));
 }
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
-append_splitted( CONTAINER_T* strs_, std::string const& _str, ASJ_special const& _asj )
+Append_splitted( CONTAINER_T* strs_, std::string const& _str, ASJ_special const& _asj )
 {
     // std::cout<<HGREEN<<"2nd Wrapped ASJ"<<NOCOLOR<<std::endl;
     return append_splitted( strs_, _str, ",", _asj);
@@ -687,10 +687,10 @@ append_splitted( CONTAINER_T* strs_, std::string const& _str, ASJ_special const&
 
 //@} 3 overloads
 
-//:append_joined:// Inverse of append_splitted
+//:Append_joined:// Inverse of append_splitted
     template <typename CONTAINER_T=std::vector<std::string> >
     state_t
-append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr=" ")
+Append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr=" ")
 {
     state_t return_value=State(0);
     if ( !_strs.size() ) {
@@ -730,11 +730,11 @@ append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr="
     return return_value;
 }
     template <typename CONTAINER_T=std::vector<std::string> >
-    state_t 
-append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
+    state_t
+Append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
 {
     std::string sepStr={_sepChr};
-    return append_joined(txt_,_strs,sepStr.c_str());
+    return Append_joined(txt_,_strs,sepStr.c_str());
 }
 //@} to be moved to separate unit
 
@@ -761,7 +761,7 @@ void Initialize(int _argC, char const* _argV[]);
 
 //:__TU_FS:// Single and short replacement, namespace alias bad if used in header. Local to declarations here.
 #define __TU_FS std::experimental::filesystem
-state_t FileInPATH ( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
+state_t FileInPATH( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
 std::time_t pathWriteTime( __TU_FS::path _path);
 state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
 #undef __TU_FS

@@ -36,7 +36,7 @@ cerror(const Args_T&... _args)
  @return -1 on error otherwhise 0
  @sa int Error_close( int _fd, std::string _perrormsg )
 */
-int Error_close( int _fd);
+state_t Error_close( int _fd);
 /**
  @brief Close the file while reporting a optional error message and a system error message
  @param[in] _fd The filedescriptor to close.
@@ -44,7 +44,7 @@ int Error_close( int _fd);
  @return -1 on error otherwhise 0
  @sa int Error_close( int _fd)
 */
-    inline int
+    inline state_t
 Error_close( int _fd, std::string _perrormsg )
 {
     perror( _perrormsg.c_str());

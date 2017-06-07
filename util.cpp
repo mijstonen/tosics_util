@@ -23,7 +23,8 @@ delegated from STATEREPORT macro, see its description in utils.h
 thread_local std::ostream* stateReport_StreamPtr= &std::cerr;
 
 #if 1
-std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPtr)
+    std::ostream*
+stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPtr)
 {
     std::ostream* return_value= stateReport_StreamPtr;
     if ( _stateReport_StreamPtr ) {
@@ -34,11 +35,13 @@ std::ostream* stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPt
 #endif
 
 # if SR_DEBUG
-state_t __stateReport(  state_t _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, \
-                        char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
+    state_t
+__stateReport(  state_t _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, \
+                char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
 # else // release hides location information
-state_t __stateReport(  state_t _return_state_of_call_, char const* _callee, \
-                        char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
+    state_t
+__stateReport(  state_t _return_state_of_call_, char const* _callee, \
+                char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
 # endif // SR_DEBUG
 {
     static char const*const kind[]{ ""
@@ -113,7 +116,8 @@ state_t __stateReport(  state_t _return_state_of_call_, char const* _callee, \
 ________________________________________________________________________________________________________________________
 universal alignment function
 */
-size_t align_size_to_multi_min( size_t _size_, size_t const& _min)
+    size_t
+AlignSizeToMultiMin ( size_t _size_, size_t const& _min)
 {
   size_t bytes_exceeding_last_min= _size_ % _min;
 
@@ -135,20 +139,22 @@ size_t align_size_to_multi_min( size_t _size_, size_t const& _min)
 ________________________________________________________________________________________________________________________
 helper to de STATEREPORT() perror() on close()
 */
-int Error_close( int _fd)
+    state_t
+Error_close( int _fd)
 {
     if ( !STATEREPORT(  close( _fd)  ) ){
-        return 0;
+        return State(0);
     }
     perror("close() failed");
-    return -1;
+    return State(-1);
 }
 /*
 ________________________________________________________________________________________________________________________
 set file to desired size, if it needs to grow then the size is set by writing the last byte otherwhise the content
 beyond the set size is lost.
 */
-int setFileSize( int _fd, size_t _size, bool _grow)
+    int
+SetFileSize ( int _fd, size_t _size, bool _grow)
 {
     // set size
     auto new_pos= _size;
@@ -233,17 +239,14 @@ InfoSettings::validateFailed() const
 
     return State(0);
 }
-
-
-char const* datetime()
+    char const*
+DateTime()
 {
     auto now = time(nullptr);
     return asctime(localtime(&now));
 }
-
-
-
-void info_main_args(int argc, char const* argv[])
+    void
+Info_main_args (int argc, char const* argv[])
 {
     for (int i = 0; i < argc; ++i) {
         INFO(VARVAL(i), VARVAL(argv[i]));
@@ -251,7 +254,8 @@ void info_main_args(int argc, char const* argv[])
 }
 
 //:DumpBacktraceInFileStream:// show backtrace
-void DumpBacktraceInFileStream(int backtrace_output_filehandle_)
+    void
+DumpBacktraceInFileStream(int backtrace_output_filehandle_)
 {
     // TODO: Fix missing symbols. Do name unmangeling.
 
@@ -279,7 +283,8 @@ void DumpBacktraceInFileStream(int backtrace_output_filehandle_)
 }
 
 //:zipLeftsAndRightsJoin2Str:// Assist VARVALS, but generalized to zip 2 string vectors together
-state_t zipLeftsAndRightsJoin2Str(
+    state_t
+zipLeftsAndRightsJoin2Str(
   std::string *out_
 , std::vector<std::string> const& _lefts
 , char const* _left_right_separator
@@ -314,13 +319,13 @@ state_t zipLeftsAndRightsJoin2Str(
     for( decltype( _lefts.size()) i=0; i<_lefts.size(); ++i ) {
         std::vector<std::string> label_and_value= { move( _lefts[i]), move( _rights[i])};
         std::string itemStr;
-        if ( STATEREPORT(   append_joined( &itemStr, label_and_value, _left_right_separator)   ) ) {
+        if ( STATEREPORT(   Append_joined( &itemStr, label_and_value, _left_right_separator)   ) ) {
             return State(-5);
         }
         to_be_joined.push_back( move( itemStr));
     }
 
-    if ( STATEREPORT(   append_joined( out_, to_be_joined, _zippedSeparator)   ) ) {
+    if ( STATEREPORT(   Append_joined( out_, to_be_joined, _zippedSeparator)   ) ) {
         return State(-6);
     }
 
@@ -331,12 +336,13 @@ namespace {
     static char const * const varvals_ErrorMsgPart="From VARVALS(...) macro, varvals()/";
 }
 
-void __varvals_merge_with_lables(std::string* out_, char const * _args_str, std::vector<std::string> const& _values)
+    void
+__varvals_merge_with_lables(std::string* out_, char const * _args_str, std::vector<std::string> const& _values)
 {
     // extract lables
     std::vector<std::string> labels;
     {state_t splitting_returns_no_0=
-        append_splitted( &labels, _args_str);
+        Append_splitted( &labels, _args_str);
     if ( splitting_returns_no_0 ){
         ThrowBreak( std::logic_error( std::string(varvals_ErrorMsgPart) +
                                       "append_splitted() returned State(" +
@@ -406,7 +412,7 @@ FileInPATH ( fs::path* canonical_path_,  fs::path _filename, char const* _dirs)
         _dirs= envvar_path_content;
     }
     std::vector<std::string> directories;
-    if ( STATEREPORT(append_splitted( &directories, std::string(_dirs), ":")) ) {
+    if ( STATEREPORT(Append_splitted( &directories, std::string(_dirs), ":")) ) {
         return State(-2); // Error during splitting.
     }
 

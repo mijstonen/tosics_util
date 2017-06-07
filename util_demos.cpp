@@ -169,7 +169,7 @@ void findIndex_demo()
 
 
     // search
-    tu::findIndex( &found_index, newSymbol_and_nonParenKeywords);
+    tu::FindIndex( &found_index, newSymbol_and_nonParenKeywords);
 
 
     INFO(VARVAL(found_index));
@@ -473,7 +473,7 @@ void append_splitted_demo()
     std::string in("'12.2' 3");
     std::vector<std::string> out;
     INFO(VARVAL(in));
-    tu::state_t as=tu::append_splitted( &out, in," ");
+    tu::state_t as=tu::Append_splitted( &out, in," ");
     STATEREPORT(as);
     for( auto ostr:out ) INFO(VARVAL(ostr));
 }
