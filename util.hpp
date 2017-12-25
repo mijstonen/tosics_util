@@ -445,6 +445,20 @@ FindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
     ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
 }
 
+//
+// Would this be faster ? (by forward pre scanning by the processor)
+//
+    inline void
+ForwardFindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
+{
+    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );// item to be found has to be on _texts[_NumberOfItems_in_indexOut_-1]
+    const char* item_to_be_found= _texts[ ( *_NumberOfItems_in_indexOut_ )- 1 ];
+    ( *_NumberOfItems_in_indexOut_ )=0;
+    while  ( strcmp( _texts[( *_NumberOfItems_in_indexOut_ )++], item_to_be_found ) ){
+        // DBG_INFO(VARVAL(_NumberOfItems_in_indexOut_)); FAKE_USE(_NumberOfItems_in_indexOut_);
+    };
+}
+
 char const* DateTime();
 
     void
