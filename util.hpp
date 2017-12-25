@@ -432,7 +432,7 @@ int SetFileSize ( int _fd, size_t _size, bool _grow=true);
     inline void
 FindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
 {
-    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found hast to be on _texts[0]
+    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found has to be on _texts[0]
 
     const char* item_to_be_found= _texts[0];
 #pragma GCC diagnostic push
@@ -537,7 +537,7 @@ struct ASJ_special
     std::string m_ignorers="'\"";
 };
 
-//:append_splitted:// For VARVALS implementation, to split string with arguments
+//:Append_splitted:// For VARVALS implementation, to split string with arguments
 //@{ 3 overloads
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
@@ -689,19 +689,19 @@ Append_splitted( CONTAINER_T* strs_, std::string const& _str
 Append_splitted( CONTAINER_T* strs_, std::string const& _str, char const* _seps, ASJ_special const& _asj )
 {
     // std::cout<<HGREEN<<"Wrapped ASJ"<<NOCOLOR<<std::endl;
-    return append_splitted( strs_, _str, _seps, std::experimental::make_optional(_asj));
+    return Append_splitted( strs_, _str, _seps, std::experimental::make_optional(_asj));
 }
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
 Append_splitted( CONTAINER_T* strs_, std::string const& _str, ASJ_special const& _asj )
 {
     // std::cout<<HGREEN<<"2nd Wrapped ASJ"<<NOCOLOR<<std::endl;
-    return append_splitted( strs_, _str, ",", _asj);
+    return Append_splitted( strs_, _str, ",", _asj);
 }
 
 //@} 3 overloads
 
-//:Append_joined:// Inverse of append_splitted
+//:Append_joined:// Inverse of Append_splitted
     template <typename CONTAINER_T=std::vector<std::string> >
     state_t
 Append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr=" ")
@@ -776,7 +776,6 @@ void Initialize(int _argC, char const* _argV[]);
 //:__TU_FS:// Single and short replacement, namespace alias bad if used in header. Local to declarations here.
 #define __TU_FS std::experimental::filesystem
 state_t FileInPATH( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
-std::time_t pathWriteTime( __TU_FS::path _path);
 state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
 #undef __TU_FS
 

@@ -345,7 +345,7 @@ __varvals_merge_with_lables(std::string* out_, char const * _args_str, std::vect
         Append_splitted( &labels, _args_str);
     if ( splitting_returns_no_0 ){
         ThrowBreak( std::logic_error( std::string(varvals_ErrorMsgPart) +
-                                      "append_splitted() returned State(" +
+                                      "Append_splitted() returned State(" +
                                       std::to_string(splitting_returns_no_0) +
                                       ") : Failed splitting argument name list into separate arument names")
                   , eBC_default );
