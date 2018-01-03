@@ -1,7 +1,9 @@
 Tosics Util
 ===========
 
-The C++11/C++14  evolved utility library.
+A C...C++11/C++14  utility library.
+Collected usefull functionality over the years.
+Spinoff from the qnode project.
 
 compilers:
 g++ clang++   (-std=c++14)
@@ -14,16 +16,23 @@ Doxygen documentation.
 Highlights
 ==========
 
-INFO, VARVAL... PTRCHRNUMHEX, VARVALS macros
+INFO, VARVAL... PTRCHRNUMHEX, VARVALS macros.
 
-(DEBUG) ASSERT macros
+(DEBUG) ASSERT macros.
 
-Advanced split and join
+Advanced split and join.
 
-preserve
+preserve.
 
-STATEREPORT
+STATEREPORT.
 
-Backtrace on exceptions and signal(s)
+Backtrace on exceptions and signal(s).
+
+Delibirately simple console text coloring.
+
+(Forward) FindIndex, to switch on variable length strings.
 
 And of cause several usefull utility macros and functions.
+
+
+Public available, on github.
