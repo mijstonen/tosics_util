@@ -733,6 +733,8 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr="
         // assume destr_ has 1 or more priviously joined items and separate following strings by _sep
         txt_->append( _sepStr);
     }
+
+#if 0    // only works if there is a [] operator
     auto i_of_last_str= _strs.size() - 1;
     for ( decltype(i_of_last_str) i=0; i<i_of_last_str; ++i){
         txt_->append( _strs[i]);
@@ -740,6 +742,16 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char const* _sepStr="
     }
     // join last string, not followed by separator
     txt_->append(_strs[i_of_last_str]);
+#else   // should work for most container types
+    auto strs_size= _strs.size();
+    decltype(strs_size) i=0;
+    for(auto str: _strs){
+        txt_->append( str);
+        if ( ++i< strs_size ) {
+            txt_->append( _sepStr);
+        }
+    }
+#endif
 
     return return_value;
 }
