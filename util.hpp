@@ -537,8 +537,18 @@ struct ASJ_special
     std::string m_ignorers="'\"";
 };
 
+/*
+   concept_BackAppendable
+      CONTAINER_T must have member functions
+         reference back()
+         emplace_back(Args...)
+
+    CONTAINER_T should be FowardIterable.
+ */
+
 //:Append_splitted:// For VARVALS implementation, to split string with arguments
 //@{ 3 overloads
+
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
 Append_splitted( CONTAINER_T* strs_, std::string const& _str
@@ -766,16 +776,16 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
 
     template<typename Last_T>
     inline void
-fake_use( Last_T const& /*_last*/)
+Fake_use( Last_T const& /*_last*/)
 {
     //(void)( _last);
 }
     template<typename First_T, typename... Remaining_T>
     inline void
-fake_use( First_T const& _first, Remaining_T const&... _remaining)
+Fake_use( First_T const& _first, Remaining_T const&... _remaining)
 {
-    fake_use( _first);
-    fake_use( _remaining...);
+    Fake_use( _first);
+    Fake_use( _remaining...);
 }
 
 extern std::vector<std::string> ProgramArguments;
@@ -800,7 +810,7 @@ state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
 
 //:FAKE_USE
 /// compiler portable suppress "unused variable" warning
-#define FAKE_USE(...) tosics::util::fake_use(__VA_ARGS__)
+#define FAKE_USE(...) tosics::util::Fake_use(__VA_ARGS__)
 
 
 /**********************************************************************************************************************/
