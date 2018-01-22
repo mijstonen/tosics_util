@@ -74,7 +74,7 @@ namespace tosics::util {
  \code
  // get some handle, report < 0 (Errors) only
  if ( handle= STATEREPORT(open(x),'E'))< 0 ) {
-   // action if a state is reportted
+   // action if a state is reported
    ...
    return -1; // return a (error) state to the caller, the caller may use STATEREPORT to detect it
  }
