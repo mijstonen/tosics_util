@@ -175,7 +175,6 @@ SetFileSize ( int _fd, size_t _size, bool _grow)
         STATEREPORT( Error_close( _fd, "Error calling lseek() to 'stretch' the file") );
         return -1;
     }
-    #endif
     ASSERT( static_to_type_cast(new_pos, ofs)== new_pos  );
 
     if ( _grow ) {
@@ -185,7 +184,6 @@ SetFileSize ( int _fd, size_t _size, bool _grow)
             STATEREPORT( Error_close( _fd, "write() call failed"));
             return -2;
         }
-        #endif
     }
     return 0;
 }
