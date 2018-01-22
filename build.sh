@@ -20,7 +20,8 @@ TARGET=$1
 
 build_in_other_dir()
 {
-  cd ../build/util
+  prj_dir_name=$(basename $(pwd))
+  cd "../build/$prj_dir_name"
   VERBOSE=1 ninja -v -j 8  $1
   ls -lrth --full-time --color=always
   cd -
