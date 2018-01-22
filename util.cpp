@@ -137,7 +137,7 @@ AlignSizeToMultiMin ( size_t _size_, size_t const& _min)
 
 /*
 ________________________________________________________________________________________________________________________
-helper to de STATEREPORT() perror() on close()
+helper to the STATEREPORT() perror() on close()
 */
     state_t
 Error_close( int _fd)
@@ -152,6 +152,13 @@ Error_close( int _fd)
 ________________________________________________________________________________________________________________________
 set file to desired size, if it needs to grow then the size is set by writing the last byte otherwhise the content
 beyond the set size is lost.
+
+
+REMARKS
+  use         open(<const char* filename string>, ( O_CREAT | O_TRUNC | O_RDWR ), mode_t( \*octal*\ 0666)  );
+  to set _fd
+
+  This function is not crossplatform portable.
 */
     int
 SetFileSize ( int _fd, size_t _size, bool _grow)
@@ -164,13 +171,6 @@ SetFileSize ( int _fd, size_t _size, bool _grow)
 
     auto ofs= lseek( _fd, static_cast<off_t>( new_pos), SEEK_SET);
 
-    #if 0
-    if ( ofs== static_to_type_cast( ofs,-1) ) {
-        Error_close( _fd, "Error calling lseek() to 'stretch' the file");
-        return -1;
-    }
-    #else   // rewrote code but it is not tested so on doubts, fallback to the code above. Note that the error output is different.
-
     if ( STATEREPORT( ofs, SR_EXCLUDE_ALL( static_cast<state_t>(new_pos)) )== -1 ) {
         STATEREPORT( Error_close( _fd, "Error calling lseek() to 'stretch' the file") );
         return -1;
@@ -179,25 +179,11 @@ SetFileSize ( int _fd, size_t _size, bool _grow)
     ASSERT( static_to_type_cast(new_pos, ofs)== new_pos  );
 
     if ( _grow ) {
-        // write last byte causes file size to be set to newsize+1 ( == _size )
-        #if 0
-        auto wr= write( _fd, "", 1);
-        if ( wr< static_to_type_cast(wr,0) ) {
-            if (STATEREPORT( wr , 'E' ))  {
-                Error_close( _fd, "Error writing last byte of the file");
-                return -2;
-            }
-        }
-        else if ( wr!= static_to_type_cast(wr,1) ) {  // write() did not return a error code but a incorrect number of bytes written
-            Error_close( _fd);
-            std::cerr<< "write() did write "<<wr << "bytes in stead of one last byte"<<std::endl;
-            return -3;
-        }
-        #else   // rewrote code but it is not tested so on doubts, fallback to the code above. Note that the error output is different.
         auto write_last_byte = write( _fd,"", 1);
         if ( STATEREPORT(write_last_byte,SR_EXCLUDE_ALL(1))!=1 ) {
             CERROR(VARVAL(write_last_byte)," expected to be '1'");
-            STATEREPORT( Error_close( _fd));
+            STATEREPORT( Error_close( _fd, "write() call failed"));
+            return -2;
         }
         #endif
     }
@@ -311,7 +297,7 @@ zipLeftsAndRightsJoin2Str(
         return State(-4);
     }
     if ( out_->length() ) {
-        // out_ will be overwritten, it is no error but that might be not intended the proces continues
+        // out_ will be overwritten, it is no error but that might be not intended, however the proces continues
         return_value= State(1);
     }
 
