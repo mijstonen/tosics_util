@@ -66,6 +66,8 @@
 #include <queue>
 #include <deque>
 #include <list>
+#include <forward_list>
+
 #endif
 
 #if 0// C++ math

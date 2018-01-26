@@ -19,7 +19,11 @@ namespace tosics::util {
       //@{ configurable
       std::ostream* ostreamPtr= &std::cout;
       const char* objectSeparation= " ";
+      const char* pairItemsSeparation= ":";
       const char* customQuote= "'";
+      const char* containerStart="{";
+      const char* containerItemSeparation=",";
+      const char* containerEnd="}";
       //@} configurable
 
       // work variables
@@ -49,6 +53,11 @@ ObjectSeparation()
 {
     return AppliedInfoSettingsPtr->objectSeparation;
 }
+    inline char const*
+PairItemsSeparation()
+{
+    return AppliedInfoSettingsPtr->pairItemsSeparation;
+}
 
     inline char const*
 CustomQuote()
@@ -56,6 +65,23 @@ CustomQuote()
     return AppliedInfoSettingsPtr->customQuote;
 }
 
+    inline char const*
+ContainerStart()
+{
+    return AppliedInfoSettingsPtr->containerStart;
+}
+
+    inline char const*
+ContainerItemSeparation()
+{
+    return AppliedInfoSettingsPtr->containerItemSeparation;
+}
+
+    inline char const*
+ContainerEnd()
+{
+    return AppliedInfoSettingsPtr->containerEnd;
+}
 /*
  To count objects that are printed on the same line. By function encapsulation
  of the object we can have the counter in a header-only implementation. Generally
@@ -78,7 +104,7 @@ OstreamPtrRef()
 }
 
     inline void
-Direct_info_to( std::ostream* target_)
+Redirect_info_to( std::ostream* target_)
 {
     OstreamPtrRef()= target_;
 }
@@ -286,12 +312,94 @@ onullstream : public std::ostream
     }
 };
 
-}// namespace util
+
+
+
+
+
+
+
+
+
+
+
+//@{ NEW DEVELOPMENT  genereric operator << to pretty printing (small) containers for all sequence containers
+//
+// (concept) requirements(CONTAINER_T _c) _c.cbegin(); _c.end(); CONTAINER_T::const_iterator::operator++()
+//
+
+
+// Allows representing pairs and thereby also maps can be represented (as containers of pairs).
+    template<
+        typename OS_T,
+        typename T1,
+        typename T2
+    >
+OS_T& operator << (OS_T& os_, std::pair<T1,T2> _pair)
+{
+    return os_ << _pair.first<< PairItemsSeparation() <<_pair.second;
+}
+
+namespace {
+    // Implementation body. Some containers require a different template signature.
+        template<
+            typename OS_T,
+            typename CONTAINER_T
+        >
+        OS_T&
+    _operator_shiftleft_body(OS_T& os_,  CONTAINER_T const& _container )
+    {
+        os_<< ContainerStart();
+        for(auto i=_container.cbegin();;){
+            os_<< *i;
+            if ( ++i==_container.cend()) {
+                break;
+            }
+            os_ << ContainerItemSeparation();
+        }
+        os_<< ContainerEnd();
+        return os_;
+    }
+}//namespace
+
+    template<
+         typename OS_T,
+         template<
+             typename _T,
+             typename ..._R
+         >
+         typename CONTAINER_T,
+         typename T,
+         typename... R
+    >
+    OS_T&
+operator <<  (OS_T& os_,  CONTAINER_T<T,R...>const& _container)
+{
+    return _operator_shiftleft_body( os_ , _container);
+}
+
+    template<
+        typename OS_T,
+        typename T,
+        std::size_t N
+    >
+    OS_T&
+operator << (OS_T& os_,  std::array<T,N>const& _container)
+{
+    return _operator_shiftleft_body( os_ , _container);
+    return os_;
+}
+
+
+//@} NEW DEVELOPMENT
+
+
+}// namespace tosics::util
 //@}
 
 //:INFO_TO
 /// @brief redirect INFO to other stream
-#  define INFO_TO(TargetOstream_) tosics::util::Direct_info_to( & TargetOstream_ )
+#  define INFO_TO(TargetOstream_) tosics::util::Redirect_info_to( & TargetOstream_ )
 
 //:ENDL
 /// @brief issue newline and flush (aka << std::endl)
