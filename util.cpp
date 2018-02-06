@@ -197,6 +197,9 @@ InfoSettings thread_local *AppliedInfoSettingsPtr= &StandardInfoSettings;
     state_t
 InfoSettings::validateFailed() const
 {
+
+    //TODO : more checks required, also check recent added
+
     if ( ostreamPtr==nullptr ) {
         return State(-1);
     }
@@ -242,6 +245,7 @@ Info_main_args (int argc, char const* argv[])
 DumpBacktraceInFileStream(int backtrace_output_filehandle_)
 {
     // TODO: Fix missing symbols. Do name unmangeling.
+    // Consider the new (since 1.65) Boost.Stacktrace  library.
 
     static bool entered=false; // avoid recursing
     static void* btbufs[MAX_BT_BUFS];
