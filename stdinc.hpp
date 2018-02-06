@@ -100,6 +100,10 @@
 #if 0 // also include all the goodies of chai
 #include <chaiscript/chaiscript.hpp>
 #endif
+
+#if 1 // bare OpenMP ( requires -fopenmp )
+#include <omp.h>
+#endif
 /*
 ________________________________________________________________________________________________________________________
 

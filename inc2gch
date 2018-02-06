@@ -37,7 +37,7 @@ then
     # cp "$INCLUDE_INPUT" "$INCLUDE_INPUT_PATH"  # only used if precompiled header can be used
 
     PCCMD="ccache g++ -march=native -pipe -DDEBUG -ggdb -H -O0 \
-        -std=$STD_OF_CPP -fconcepts -rdynamic -x c++-header $INCLUDE_INPUT -o $PRECOMPILED_OUT_PATH 2>&1 | tee $PRECOLPILE_LOG"
+        -std=$STD_OF_CPP -fconcepts -fopenmp -rdynamic -x c++-header $INCLUDE_INPUT -o $PRECOMPILED_OUT_PATH 2>&1 | tee $PRECOLPILE_LOG"
     eval "$PCCMD"
 else
     echo "Precompiled header $PRECOMPILED_OUT_PATH, is up to date"
