@@ -59,13 +59,13 @@ class preserve_base
     preserve_base(preserve_base& _origin)
     : m_restore(true)
     {
-        _origin.restore(false);  // only the copied preserve instance will resote, not its origin
+        _origin.restore(false);  // only the copied preserve instance will restore, not its origin
     }
 
     preserve_base(preserve_base&& _origin)
     : m_restore(true)
     {
-        _origin.restore(false);  // only the copied preserve instance will resote, not its origin
+        _origin.restore(false);  // only the copied preserve instance will restore, not its origin
     }
 
 
