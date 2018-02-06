@@ -388,7 +388,7 @@ int SetFileSize ( int _fd, size_t _size, bool _grow=true);
 //:FindIndex
 /**
  @brief Find index (in reverse order) of strings in a array, to apply switch i.s.o long 'if else if' list.
- @param[in,out] _NumberOfItems_in_indexOut_ in: Number of items in the array (see below),
+ @param[in,out] _NumberOfItemsIn_indexOut_ in: Number of items in the array (see below),
                 out the index number found or 0 if not found.
  @param[in] _texts Array of strings to be found, additionally the search string should be on _texts[0].
 
@@ -430,33 +430,40 @@ int SetFileSize ( int _fd, size_t _size, bool _grow=true);
            or 1..ITEMS_IN(texts)-1 when found.
 */
     inline void
-FindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
+FindIndex( int *_NumberOfItemsIn_indexOut_, const char* _texts[])
 {
-    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );  // item to be found has to be on _texts[0]
+    ASSERT( ( *_NumberOfItemsIn_indexOut_ )> 0 );  // item to be found has to be on _texts[0]
 
     const char* item_to_be_found= _texts[0];
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wempty-body"  // for clang++
-    while  ( strcmp( _texts[--( *_NumberOfItems_in_indexOut_ )], item_to_be_found ) ){
-        // DBG_INFO(VARVAL(_NumberOfItems_in_indexOut_)); FAKE_USE(_NumberOfItems_in_indexOut_);
+    while  ( strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found ) ){
+        // DBG_INFO(VARVAL(_NumberOfItemsIn_indexOut_)); FAKE_USE(_NumberOfItemsIn_indexOut_);
     };
 #pragma GCC diagnostic pop
 
-    ASSERT( ( *_NumberOfItems_in_indexOut_ )>= 0 );
+    ASSERT( ( *_NumberOfItemsIn_indexOut_ )>= 0 );
 }
 
 //
 // Would this be faster ? (by forward pre scanning by the processor)
+// output: index+1 of found string (effectively the same as with FindIndex)
+//         or 0 if not found.
+// NOTE: The string to be found MUST be the last in _texts
 //
     inline void
-ForwardFindIndex( int *_NumberOfItems_in_indexOut_, const char* _texts[])
+ForwardFindIndex( int *_NumberOfItemsIn_indexOut_, const char* _texts[])
 {
-    ASSERT( ( *_NumberOfItems_in_indexOut_ )> 0 );// item to be found has to be on _texts[_NumberOfItems_in_indexOut_-1]
-    const char* item_to_be_found= _texts[ ( *_NumberOfItems_in_indexOut_ )- 1 ];
-    ( *_NumberOfItems_in_indexOut_ )=0;
-    while  ( strcmp( _texts[( *_NumberOfItems_in_indexOut_ )++], item_to_be_found ) ){
-        // DBG_INFO(VARVAL(_NumberOfItems_in_indexOut_)); FAKE_USE(_NumberOfItems_in_indexOut_);
+    ASSERT( ( *_NumberOfItemsIn_indexOut_ )> 0 );// item to be found has to be on _texts[_NumberOfItemsIn_indexOut_-1]
+    int numberOfItemsIn= *_NumberOfItemsIn_indexOut_;
+    const char* item_to_be_found= _texts[ ( *_NumberOfItemsIn_indexOut_ )- 1 ];
+    ( *_NumberOfItemsIn_indexOut_ )=0;
+    while  ( strcmp( _texts[( *_NumberOfItemsIn_indexOut_ )++], item_to_be_found ) ){
+        // DBG_INFO(VARVAL(_NumberOfItemsIn_indexOut_)); FAKE_USE(_NumberOfItemsIn_indexOut_);
     };
+    if ( *_NumberOfItemsIn_indexOut_>= numberOfItemsIn ) {
+        *_NumberOfItemsIn_indexOut_=0;
+    }
 }
 
 char const* DateTime();
@@ -501,12 +508,12 @@ ThrowBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default)
             throwBreak_EBC(eBC_default);                 //
             throwBreak_EBC(eBC_signal);                  // put a breakpoint
             throwBreak_EBC(eBC_io);                      // on one of
-            throwBreak_EBC(eBC_ui);                      // these lines
+            throwBreak_EBC(eBC_ui);                      // these throwBreak... lines
             throwBreak_EBC(eBC_service);                 //
-            throwBreak_EBC(eBC_aync);
-            throwBreak_EBC(eBC_assertion_failed);
-            throwBreak_EBC(eBC_handled);
-            throwBreak_EBC(eBC_fatal);
+            throwBreak_EBC(eBC_aync);                    //
+            throwBreak_EBC(eBC_assertion_failed);        //
+            throwBreak_EBC(eBC_handled);                 //
+            throwBreak_EBC(eBC_fatal);                   //
         }
 #undef throwBreak_EBC
         std::cerr<< std::endl<< HRED << __PRETTY_FUNCTION__
