@@ -24,6 +24,9 @@ namespace tosics::util {
       const char* containerStart="{";
       const char* containerItemSeparation=",";
       const char* containerEnd="}";
+      const char* tupleStart="(";
+      const char* tupleItemSeparation=",";
+      const char* tupleEnd=")";                         //TODO: see util.cpp:InfoSettings::validateFailed()
       //@} configurable
 
       // work variables
@@ -82,6 +85,25 @@ ContainerEnd()
 {
     return AppliedInfoSettingsPtr->containerEnd;
 }
+
+
+    inline char const*
+TupleStart()
+{
+    return AppliedInfoSettingsPtr->tupleStart;
+}
+    inline char const*
+TupleItemSeparation()
+{
+    return AppliedInfoSettingsPtr->tupleItemSeparation;
+}
+    inline char const*
+TupleEnd()
+{
+    return AppliedInfoSettingsPtr->tupleEnd;
+}
+
+
 /*
  To count objects that are printed on the same line. By function encapsulation
  of the object we can have the counter in a header-only implementation. Generally
@@ -313,21 +335,9 @@ onullstream : public std::ostream
 };
 
 
-
-
-
-
-
-
-
-
-
-
 //@{ NEW DEVELOPMENT  genereric operator << to pretty printing (small) containers for all sequence containers
-//
-// (concept) requirements(CONTAINER_T _c) _c.cbegin(); _c.end(); CONTAINER_T::const_iterator::operator++()
-//
-
+// (concept) requirements(CONTAINER_T _c) _c.begin(); _c.end(); CONTAINER_T::const_iterator::operator++()
+//           NOTE: cbegin() and cend() would not work for
 
 // Allows representing pairs and thereby also maps can be represented (as containers of pairs).
     template<
@@ -339,29 +349,65 @@ OS_T& operator << (OS_T& os_, std::pair<T1,T2> _pair)
 {
     return os_ << _pair.first<< PairItemsSeparation() <<_pair.second;
 }
-
-namespace {
-    // Implementation body. Some containers require a different template signature.
-        template<
-            typename OS_T,
-            typename CONTAINER_T
-        >
-        OS_T&
-    _operator_shiftleft_body(OS_T& os_,  CONTAINER_T const& _container )
+//:for_each_alternate
+//like for_each, but "alternates" the action with another actiononly and always between the foreach action
+//This is a very common case where the alternation is a separation between the other action (aka:
+//comma separated values).
+//modified algorithm, body origin: /usr/include/c++/6/bits/stl_algo.h:for_each()
+  template<typename _InputIterator, typename _Function, typename _AlternateFn>
+    _Function
+    for_each_alternate(_InputIterator __first, _InputIterator __last, _Function __f, _AlternateFn __af)
     {
-        os_<< ContainerStart();
-        for(auto i=_container.cbegin();;){
-            os_<< *i;
-            if ( ++i==_container.cend()) {
-                break;
-            }
+      // concept requirements
+      __glibcxx_function_requires(_InputIteratorConcept<_InputIterator>)
+      __glibcxx_requires_valid_range(__first, __last);
+
+      for(;;) {
+        __f(*__first);
+        if ( ++__first==__last ) {
+            break;
+        }
+        //else: alternate actions between actions of __f
+        __af(*__first);
+      }
+
+      return _GLIBCXX_MOVE(__f);
+    }
+namespace { // anonimous namespace to only use what is defined here in this module / this file
+// Implementation body. Some containers require a different template signature.
+    template<
+        typename OS_T,
+        typename CONTAINER_T
+    >
+    OS_T&
+_operator_shiftleft_body(OS_T& os_,  CONTAINER_T const& _container )
+{
+    os_<< ContainerStart();
+    for_each_alternate( _container.begin(), _container.end(),
+        [&os_]/*print item*/(auto const& _item) {
+            os_ << _item;
+        },
+        [&os_]/*alternate with printing item separation*/(auto const&) {
             os_ << ContainerItemSeparation();
         }
-        os_<< ContainerEnd();
-        return os_;
-    }
-}//namespace
+    );
+    os_<< ContainerEnd();
+    return os_;
+}
 
+    template<
+        typename OS_T,
+        typename TU_T,
+        size_t... I
+    >
+    void
+_print_tuple(OS_T& os_, TU_T const& _tup, std::index_sequence<I...>) // requires C++17 index_sequence and folding
+{
+    os_ << TupleStart();
+    (..., (os_ << (I == 0? "" : TupleItemSeparation()) << std::get<I>(_tup)  ));
+    os_ << TupleEnd();
+}
+}//namespace
     template<
          typename OS_T,
          template<
@@ -377,7 +423,6 @@ operator <<  (OS_T& os_,  CONTAINER_T<T,R...>const& _container)
 {
     return _operator_shiftleft_body( os_ , _container);
 }
-
     template<
         typename OS_T,
         typename T,
@@ -389,11 +434,17 @@ operator << (OS_T& os_,  std::array<T,N>const& _container)
     return _operator_shiftleft_body( os_ , _container);
     return os_;
 }
-
-
+    template<
+        typename OS_T,
+        typename ... T
+    >
+    OS_T&
+operator << (OS_T& os_, std::tuple<T...> const& _tup)
+{
+    _print_tuple( os_, _tup, std::index_sequence_for<T...>{});
+    return os_ ;
+}
 //@} NEW DEVELOPMENT
-
-
 }// namespace tosics::util
 //@}
 
