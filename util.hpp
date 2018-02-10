@@ -69,6 +69,24 @@
 #define ITEMS_IN(_C_array)                               (sizeof _C_array/sizeof *_C_array)
 
 
+//:Items_in
+/// MT20180209 NEW: And here is a way to do it generically with templates
+    template <size_t N, typename T>
+    constexpr size_t
+Items_in(T const (&)[N])
+{
+    return N;
+}
+    template <typename T>
+    constexpr size_t
+Items_in(std::initializer_list<T>& _t_list)
+{
+    return _t_list.size();
+}
+
+
+
+
 //:END_ADR
 /// get the first addres beyond the last possible item with given size, used in macro END_OF
 #define END_ADR(_C_array,_size)                          (_C_array+_size)
@@ -275,7 +293,7 @@ extern const void* SCX_MAP_FAILED;
 // MT20170417, Some forward declarations/definitions, see statereport.hpp
 //  defined state_t and stateLiteralArg_t are new and might not be used everywhere, using long and int should work well
 
-//:state_t:// The CPU natuaral integer (can vary per processor, only use small(..est possible) values)
+//:state_t:// The CPU natural integer (can vary per processor, only use small(..est possible) values)
 using state_t = long;
 
 //:stateLiteralArg_t:// not passing a integer literal should be detected by the compiler (by using move semantics)
@@ -299,13 +317,13 @@ State(stateLiteralArg_t _state )
 
 @b examples
 \code
-    align_size_to_multi_min( 475, 16 ); // (29+1)*16 = 480  480>475
+    AlignSizeToMultiMin( 475, 16); // (29+1)*16 = 480  480>475
 
-    align_size_to_multi_min(43,12);     // non power 2 alignment returns 48
+    AlignSizeToMultiMin( 43, 12);     // non power 2 alignment returns 48
 
-    align_size_to_multi_min(1333,1024)  // returns 2048
+    AlignSizeToMultiMin( 1333,1024)  // returns 2048
 
-    new_map_size= align_size_to_multi_min( new_map_size, mh.page_size); // make new_map_size aligned
+    new_map_size= AlignSizeToMultiMin( new_map_size, mh.page_size); // make new_map_size aligned
 \endcode
 */
 
@@ -388,7 +406,7 @@ int SetFileSize ( int _fd, size_t _size, bool _grow=true);
 //:FindIndex
 /**
  @brief Find index (in reverse order) of strings in a array, to apply switch i.s.o long 'if else if' list.
- @param[in,out] _NumberOfItemsIn_indexOut_ in: Number of items in the array (see below),
+ @param[in,out] _NumberOfItemsIn_indexOut_ in: Number of items in the array including the searched string (see below),
                 out the index number found or 0 if not found.
  @param[in] _texts Array of strings to be found, additionally the search string should be on _texts[0].
 
@@ -437,9 +455,11 @@ FindIndex( int *_NumberOfItemsIn_indexOut_, const char* _texts[])
     const char* item_to_be_found= _texts[0];
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wempty-body"  // for clang++
-    while  ( strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found ) ){
-        // DBG_INFO(VARVAL(_NumberOfItemsIn_indexOut_)); FAKE_USE(_NumberOfItemsIn_indexOut_);
-    };
+    while  (    strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found )
+            &&  strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found )
+            &&  strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found )
+            &&  strcmp( _texts[--( *_NumberOfItemsIn_indexOut_ )], item_to_be_found )
+           );
 #pragma GCC diagnostic pop
 
     ASSERT( ( *_NumberOfItemsIn_indexOut_ )>= 0 );
@@ -465,6 +485,21 @@ ForwardFindIndex( int *_NumberOfItemsIn_indexOut_, const char* _texts[])
         *_NumberOfItemsIn_indexOut_=0;
     }
 }
+//
+// Due to caching, FindIndex() is best for searching in small sets of string literals, since
+// _text[0] is causes cache line loading before the searching starts. Where as ForwardFindIndex would win in longer
+// sets where the forward searching (over multiple cachelines) could win over a small portion of extra code.
+// In practice it depends on the hardware. For large sets a binairy search algorithm works better.
+//
+// Note that FindIndex is well suited for membership testing logic  aka...
+//
+//  if ( x in abcde ) could be written as
+//
+//  if ( FindIndex( x, {"a","b","c","d","e"} ) {
+//  }
+//
+
+
 
 char const* DateTime();
 
@@ -781,6 +816,8 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
 }
 //@} to be moved to separate unit
 
+
+#if 0
     template<typename Last_T>
     inline void
 Fake_use( Last_T const& /*_last*/)
@@ -794,6 +831,19 @@ Fake_use( First_T const& _first, Remaining_T const&... _remaining)
     Fake_use( _first);
     Fake_use( _remaining...);
 }
+#else // smarter, TODO: INCUBATE and TEST
+    template<typename... _P>
+    inline void
+Fake_use(_P... /*_args*/ )
+{
+    //(void)(_args),...;
+}
+#endif
+
+
+
+
+
 
 extern std::vector<std::string> ProgramArguments;
 void Info_ProgramArguments();
