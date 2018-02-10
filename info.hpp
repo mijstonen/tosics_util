@@ -444,6 +444,65 @@ operator << (OS_T& os_, std::tuple<T...> const& _tup)
     _print_tuple( os_, _tup, std::index_sequence_for<T...>{});
     return os_ ;
 }
+
+#define STREAM2STR(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<<_MSGS)).str()
+
+
+class SHA1   // customized for use in tosics, covering common cases
+: public sha1::SHA1
+{
+public:
+    using sha1::SHA1::SHA1;
+    using sha1::SHA1::processBytes;
+
+
+        sha1::SHA1&
+    processBytes( std::string _s )
+    {
+        void const* const data= static_cast<void const*const>( _s.data());
+        size_t len= _s.length();
+        return sha1::SHA1::processBytes( data, len);
+    }
+        std::string
+    make_digest_string()
+    {
+        // NOTE: that STREAM2STR may return a temporary string,
+        // hence it should be copied before returning
+        // and the return data has to be value type.
+        std::string return_value;
+        sha1::SHA1::digest32_t digest;   // array of int32 decays to pointer, which allows modification in getDigest() call
+
+        sha1::SHA1::getDigest(/*output to*/digest);
+        return_value= STREAM2STR( std::hex<< std::setfill('0')
+                                << std::setw(8)<< digest[0]
+                                << std::setw(8)<< digest[1]
+                                << std::setw(8)<< digest[2]
+                                << std::setw(8)<< digest[3]
+                                << std::setw(8)<< digest[4]
+                                );
+        return return_value;
+    }
+};
+
+#if 0
+    template<
+        typename OS_T
+    >
+    OS_T&
+operator << ( OS_T& os_, SHA1 const&  )
+{
+ // NOTE: Weird behavior of sha1::SHA1::getDigest(),
+ //       repeated calls return different values.
+ //       That is why this operator hould not be implemented.
+ //       SHA1 is not guaranteed to be const.
+ //       Reason is unknown, improve or change are outside the scope of this project.
+ //       use tosics::util::SHA1::make_digest_string() and use a copy for repeated use.
+ //
+    assert(false);
+    return os_;
+}
+#endif
+
 //@} NEW DEVELOPMENT
 }// namespace tosics::util
 //@}
@@ -605,7 +664,6 @@ operator << (OS_T& os_, std::tuple<T...> const& _tup)
 //:INFO_FUNC:// Fast easy display function
 #define INFO_FUNC INFO(BOOST_CURRENT_FUNCTION)
 
-#define STREAM2STR(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<<_MSGS)).str()
 #define FUNC_MSG(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<< \
     "File:"<<__FILE__<<" function:"<<BOOST_CURRENT_FUNCTION <<" line:"<<__LINE__<<": "<<_MSGS)).str()
 
