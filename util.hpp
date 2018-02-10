@@ -858,7 +858,6 @@ state_t FileInPATH( __TU_FS::path* canonical_path_, __TU_FS::path _filename, cha
 state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
 #undef __TU_FS
 
-
 //TODO:
 // bool newer(const char* _leftfile, const char* _rightfile, bool return_on_fail)  // same as in c++shx.cpp except it should use std::experimental::filesystem
 //
@@ -873,7 +872,7 @@ state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
 /**********************************************************************************************************************/
 /*************************************** BROKEN OR DEPRICATED *********************************************************/
 /**********************************************************************************************************************/
-// Despite of bein broken or deprecated, some remain in the library because they where used elsewhere and/or
+// Despite of being broken or deprecated, some remain in the library because they where used elsewhere and/or
 // state certain concepts that remain alive.
 //
 
@@ -953,6 +952,8 @@ Throw_Error_Break(const Exception_T& _e)
 /*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
 // NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
 }
+
+
 
 
 #endif //UTILS_HPP_
