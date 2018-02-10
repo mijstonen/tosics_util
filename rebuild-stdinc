@@ -1,4 +1,5 @@
-rm stdinc.hpp.gch   # optional / for testing
+
+### rm stdinc.hpp.gch   # optional / for testing
 
 # files and directories / depended settings
 PRJ_PARENT_DIR="/home/michel/Projects/Kdevelop/"
