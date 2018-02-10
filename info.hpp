@@ -338,6 +338,8 @@ onullstream : public std::ostream
 //@{ NEW DEVELOPMENT  genereric operator << to pretty printing (small) containers for all sequence containers
 // (concept) requirements(CONTAINER_T _c) _c.begin(); _c.end(); CONTAINER_T::const_iterator::operator++()
 //           NOTE: cbegin() and cend() would not work for
+//          IMPORTAND: Use with any other type of containers (aka associative...) is undefined.
+//
 
 // Allows representing pairs and thereby also maps can be represented (as containers of pairs).
     template<
@@ -447,14 +449,12 @@ operator << (OS_T& os_, std::tuple<T...> const& _tup)
 
 #define STREAM2STR(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<<_MSGS)).str()
 
-
 class SHA1   // customized for use in tosics, covering common cases
 : public sha1::SHA1
 {
 public:
     using sha1::SHA1::SHA1;
     using sha1::SHA1::processBytes;
-
 
         sha1::SHA1&
     processBytes( std::string _s )
@@ -469,17 +469,16 @@ public:
         // NOTE: that STREAM2STR may return a temporary string,
         // hence it should be copied before returning
         // and the return data has to be value type.
+        // In newer C++ eco systems, std::string has move constructors
+        // and the compiler might use them instead, so eliminating copies
+        // while keeping semantics tidy.
         std::string return_value;
-        sha1::SHA1::digest32_t digest;   // array of int32 decays to pointer, which allows modification in getDigest() call
+        sha1::SHA1::digest32_t digest;//array of int32 decays to pointer, which allows modification in getDigest() call.
 
         sha1::SHA1::getDigest(/*output to*/digest);
-        return_value= STREAM2STR( std::hex<< std::setfill('0')
-                                << std::setw(8)<< digest[0]
-                                << std::setw(8)<< digest[1]
-                                << std::setw(8)<< digest[2]
-                                << std::setw(8)<< digest[3]
-                                << std::setw(8)<< digest[4]
-                                );
+    #define w8d(N) <<std::setw(8)<<digest[N]
+        return_value= STREAM2STR(std::hex<<std::setfill('0')w8d(0)w8d(1)w8d(2)w8d(3)w8d(4));
+    #undef w8d
         return return_value;
     }
 };
