@@ -104,6 +104,11 @@
 #if 1 // bare OpenMP ( requires -fopenmp )
 #include <omp.h>
 #endif
+
+#if 1 // for cpx, reduces guard checking and gave scripts cpx alike capabilities
+#include <pstream.h>
+#include <TinySHA1.hpp>
+#endif
 /*
 ________________________________________________________________________________________________________________________
 
