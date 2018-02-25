@@ -3,6 +3,7 @@
 #include "preserve.hpp"
 #include "error.hpp"
 #include "statereport.hpp"
+#include "member.hpp"
 
 
 namespace tosics::util {
