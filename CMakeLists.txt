@@ -21,7 +21,7 @@ add_definitions(
 add_compile_options(
     -march=native
     -save-temps
-    -std=c++1y
+    -std=c++1z
     -fconcepts
     -ggdb
     -I${INCLUDE_PATH}
