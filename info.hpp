@@ -6,8 +6,171 @@
 #  include "util.hpp"
 
 //@{
+
+//:INFO_TO
+/// @brief redirect INFO to other stream
+#  define INFO_TO(TargetOstream_) tosics::util::Redirect_info_to( & TargetOstream_ )
+
+//:ENDL
+/// @brief issue newline and flush (aka << std::endl)
+#  define ENDL tosics::util::NextLines(0)
+
+//:ENDLINES
+/// @brief issue newline and flush (aka << std::endl)
+#  define ENDLINES(extra_newlines) tosics::util::NextLines(extra_newlines)
+
+
+//:INFO_STREAM_PTR
+#  define INFO_STREAM_PTR (tosics::util::OstreamPtrRef())
+
+
+//@{
+/**
+ * @brief custom formatters that display the symbol or expression allong with the value.
+ *
+ * Usage INFO(VARVAL(value)); ,.... INFO(PTRCHRNUMHEX(address));
+ */
+//:VARVAL
+/// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
+#  define VARVAL(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(_ARG)
+
+//:VARVALHEX
+/// as VARVAL but the value (if nummeric) is presented hexadecimally
+#  define VARVALHEX(_ARG)  #_ARG"=",\
+    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(_ARG) )
+
+//:VARCHRNUM
+/** @brief byte specific VARVAL, represent byte as number not as character
+
+ (u)int8_t types tend to be printed as a character by the default type overloading.
+ By casting it to unsigned we select the number printing overload of ostream
+ */
+#  define VARCHRNUM(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(CHAR2UINT_CAST(_ARG))
+
+//:VARCHRNUMHEX
+/// Like VARCHRNUM but the byte is hexadecimally formatted
+#  define VARCHRNUMHEX(_ARG) #_ARG"=",\
+    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(_ARG)))
+
+//:PTRVAL
+/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
+#  define PTRVAL(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : tosics::util::custom_quote(*_ARG) )
+
+//:PTRVALHEX
+/// As PTRVAL but the pointed value is represented hexadecimal
+#  define PTRVALHEX(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : (tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(*_ARG)) )
+
+//:PTRCHRNUMHEX
+/// Combines PTRVAL and VARCHRNUMHEX (pointed character byte value is represented hexadecimal)
+#  define PTRCHRNUMHEX(_ARG) #_ARG"=",\
+    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
+    "->",\
+    (tosics::util::Is_null(_ARG)? "(nullptr)" \
+                     : ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(*_ARG))) )
+
+//:VARVALS:// i.s.o INFO(VARVAL(a),VARVAL(b),VARVAL(c) you can also write INFO(VARVALS(a,b,c))
+#define VARVALS(...) tosics::util::varvals(VSTRINGS(__VA_ARGS__),__VA_ARGS__)
+
+//@}
+
+
+//@{
+/// @brief macros debending on preprocessor definitions DEBUG and ALLOC_DEBUG
+
+//:DBG_INFO
+#  if DEBUG
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+#    define DBG_INFO(...) INFO(__VA_ARGS__)
+#    define DBG_INFO_FUNC INFO_FUNC
+#  else
+/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+#    define DBG_INFO(...)
+#    define DBG_INFO_FUNC
+#  endif
+
+#  if ALLOC_DEBUG
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+/// @sa INFO
+#    define ALDBG_INFO(...) INFO(__VA_ARGS__)
+#  else
+/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+#    define ALDBG_INFO(...)
+#  endif
+//@}
+
+//:INFO
+/**
+ @brief enabled: Lets you quicky and systematically print variables. Better for debugging then standard printing.
+ @param ... expects any amount of objects that can be streamed to std::ostream.
+ @sa VARVAL() PTRVAL() VARVALHEX() VARCHRNUM() VARCHRHEXNUM()
+
+ \code INFO( a, b, c) \endcode
+ does the same as
+ \code std::cout << a << ' ' << b << ' ' << c << ' ' << std::endl \endcode
+ but with less typing. It is intended to be used with macro's aka VARVAL,PTRVAL... as a low level and low entry
+ debugging aid. Those macro's make labels from the given variable and display the value (as of cout<< object standard
+ or self defined operator << ) in single quotes.
+
+ @b examples
+ \code
+ float my_value = 26.0; int div_num=5;
+
+ // simple INFO example
+ // -------------------
+ INFO("my value text is",my_value","devided by",divnum,"is",my_value/div_num);
+
+ // output "my value text is 26.000000 divided by 5 is 5.200000\n";
+
+ // INFO with VARVAL example
+ // ------------------------
+ INFO(VARVAL(my_value),"divided by",VARVAL(div_num),"is",VARVAL(my_value/div_num));
+ // produces
+ std::cout<<"my_value"<<"="<<' '<<''''<<my_value<<''''<<' '
+          <<"divided by"<<' '<<"div_num<<"="<<' '<<''''<<div_num<<''''<<' '
+          <<"is"<<' '
+          <<"my_value/div_num"<<' '<<''''<<my_value/div_num<<''''<<' '
+          <<std::endl;
+
+ // output: "my_value= '26.000000' divided by div_num= '5' is my_value/div_num= '5.200000'\n"
+
+
+ \endcode
+
+ @remarks INFO delibberately is designed to avoid custom formatting to keep it as simple as possible.
+          If really needed you can still do custom formatting for a certain type of object by defining a operator<< .
+          Or sometimes fall back to ordinary printing.
+          Developers are in a hurry when debugging, they hate typing more then stricktly required, they should choose
+          INFO to display variables e.t.c. i.s.o. plain printf or cout<< . The other application is to fabricate
+          strings for embedded languages (aka a specific interpreter, html or embedded (dynamic) sql).
+*/
+#  if 1
+#     define INFO(...) tosics::util::info(__VA_ARGS__)
+#  else
+/// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
+# define INFO(...)
+#  endif
+
+//:INFO_FUNC:// Fast easy display function
+#define INFO_FUNC INFO(BOOST_CURRENT_FUNCTION)
+
+#define FUNC_MSG(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<< \
+    "File:"<<__FILE__<<" function:"<<BOOST_CURRENT_FUNCTION <<" line:"<<__LINE__<<": "<<_MSGS)).str()
+
+
+
 /** @note None of the util functions below should be used directly!
- * Use the macro's enlisted below (start reading about INFO)
+ * Use the macro's enlisted above (start reading about INFO)
  */
 
 namespace tosics::util {
@@ -341,6 +504,30 @@ onullstream : public std::ostream
 //          IMPORTAND: Use with any other type of containers (aka associative...) is undefined.
 //
 
+
+//:is_iterable
+// Meta type predicate that result to true when T has methods begin() and end() otherwise false.
+// We need this as a minimum requirement for CONTAINER_T, otherwise compilation is as intended to fail.
+
+    template <typename T, typename = void>
+    struct
+is_iterable
+: std::false_type
+{
+};
+    template <typename T>
+    struct
+is_iterable<
+    T,
+    std::void_t<
+        decltype( std::declval<T>().begin() ),
+        decltype( std::declval<T>().end() )
+        >
+    >
+: std::true_type
+{
+};
+
 // Allows representing pairs and thereby also maps can be represented (as containers of pairs).
     template<
         typename OS_T,
@@ -418,10 +605,15 @@ _print_tuple(OS_T& os_, TU_T const& _tup, std::index_sequence<I...>) // requires
          >
          typename CONTAINER_T,
          typename T,
-         typename... R
+         typename... R,
+         typename std::enable_if_t< is_iterable<CONTAINER_T<T,R...>>::value,int> = 0
     >
     OS_T&
+#if 0
+operator <<  (OS_T& os_,  typename std::enable_if_t< is_iterable<CONTAINER_T<T,R...>>::value , CONTAINER_T<T,R...>> const& _container)
+#else
 operator <<  (OS_T& os_,  CONTAINER_T<T,R...>const& _container)
+#endif
 {
     return _operator_shiftleft_body( os_ , _container);
 }
@@ -434,7 +626,6 @@ operator <<  (OS_T& os_,  CONTAINER_T<T,R...>const& _container)
 operator << (OS_T& os_,  std::array<T,N>const& _container)
 {
     return _operator_shiftleft_body( os_ , _container);
-    return os_;
 }
     template<
         typename OS_T,
@@ -452,7 +643,7 @@ operator << (OS_T& os_, std::tuple<T...> const& _tup)
 class SHA1   // customized for use in tosics, covering common cases
 : public sha1::SHA1
 {
-public:
+  public:
     using sha1::SHA1::SHA1;
     using sha1::SHA1::processBytes;
 
@@ -506,165 +697,6 @@ operator << ( OS_T& os_, SHA1 const&  )
 }// namespace tosics::util
 //@}
 
-//:INFO_TO
-/// @brief redirect INFO to other stream
-#  define INFO_TO(TargetOstream_) tosics::util::Redirect_info_to( & TargetOstream_ )
-
-//:ENDL
-/// @brief issue newline and flush (aka << std::endl)
-#  define ENDL tosics::util::NextLines(0)
-
-//:ENDLINES
-/// @brief issue newline and flush (aka << std::endl)
-#  define ENDLINES(extra_newlines) tosics::util::NextLines(extra_newlines)
-
-
-//:INFO_STREAM_PTR
-#  define INFO_STREAM_PTR (tosics::util::OstreamPtrRef())
-
-
-//@{
-/**
- * @brief custom formatters that display the symbol or expression allong with the value.
- *
- * Usage INFO(VARVAL(value)); ,.... INFO(PTRCHRNUMHEX(address));
- */
-//:VARVAL
-/// gives expression list of 2 strings, the first is the variable name the second its natuarally streamed value
-#  define VARVAL(_ARG) #_ARG"=",\
-    tosics::util::custom_quote(_ARG)
-
-//:VARVALHEX
-/// as VARVAL but the value (if nummeric) is presented hexadecimally
-#  define VARVALHEX(_ARG)  #_ARG"=",\
-    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(_ARG) )
-
-//:VARCHRNUM
-/** @brief byte specific VARVAL, represent byte as number not as character
-
- (u)int8_t types tend to be printed as a character by the default type overloading.
- By casting it to unsigned we select the number printing overload of ostream
- */
-#  define VARCHRNUM(_ARG) #_ARG"=",\
-    tosics::util::custom_quote(CHAR2UINT_CAST(_ARG))
-
-//:VARCHRNUMHEX
-/// Like VARCHRNUM but the byte is hexadecimally formatted
-#  define VARCHRNUMHEX(_ARG) #_ARG"=",\
-    ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(_ARG)))
-
-//:PTRVAL
-/// gives expression list of 2 strings, the first is the pointer name the second its std::ostream pointer representation
-#  define PTRVAL(_ARG) #_ARG"=",\
-    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
-    "->",\
-    (tosics::util::Is_null(_ARG)? "(nullptr)" \
-                     : tosics::util::custom_quote(*_ARG) )
-
-//:PTRVALHEX
-/// As PTRVAL but the pointed value is represented hexadecimal
-#  define PTRVALHEX(_ARG) #_ARG"=",\
-    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
-    "->",\
-    (tosics::util::Is_null(_ARG)? "(nullptr)" \
-                     : (tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(*_ARG)) )
-
-//:PTRCHRNUMHEX
-/// Combines PTRVAL and VARCHRNUMHEX (pointed character byte value is represented hexadecimal)
-#  define PTRCHRNUMHEX(_ARG) #_ARG"=",\
-    tosics::util::custom_quote(reinterpret_cast<const void*>(_ARG)),\
-    "->",\
-    (tosics::util::Is_null(_ARG)? "(nullptr)" \
-                     : ( tosics::util::AppliedInfoSettingsPtr->next_hex(),tosics::util::custom_quote(CHAR2UINT_CAST(*_ARG))) )
-
-//:VARVALS:// i.s.o INFO(VARVAL(a),VARVAL(b),VARVAL(c) you can also write INFO(VARVALS(a,b,c))
-#define VARVALS(...) tosics::util::varvals(VSTRINGS(__VA_ARGS__),__VA_ARGS__)
-
-//@}
-
-
-//@{
-/// @brief macros debending on preprocessor definitions DEBUG and ALLOC_DEBUG
-
-//:DBG_INFO
-#  if DEBUG
-/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-/// @sa INFO
-#    define DBG_INFO(...) INFO(__VA_ARGS__)
-#    define DBG_INFO_FUNC INFO_FUNC
-#  else
-/// DEBUG depended (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-#    define DBG_INFO(...)
-#    define DBG_INFO_FUNC
-#  endif
-
-#  if ALLOC_DEBUG
-/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-/// @sa INFO
-#    define ALDBG_INFO(...) INFO(__VA_ARGS__)
-#  else
-/// ALLOC_DEBUG dependend (enabled) better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-#    define ALDBG_INFO(...)
-#  endif
-//@}
-
-//:INFO
-/**
- @brief enabled: Lets you quicky and systematically print variables. Better for debugging then standard printing.
- @param ... expects any amount of objects that can be streamed to std::ostream.
- @sa VARVAL() PTRVAL() VARVALHEX() VARCHRNUM() VARCHRHEXNUM()
-
- \code INFO( a, b, c) \endcode
- does the same as
- \code std::cout << a << ' ' << b << ' ' << c << ' ' << std::endl \endcode
- but with less typing. It is intended to be used with macro's aka VARVAL,PTRVAL... as a low level and low entry
- debugging aid. Those macro's make labels from the given variable and display the value (as of cout<< object standard
- or self defined operator << ) in single quotes.
-
- @b examples
- \code
- float my_value = 26.0; int div_num=5;
-
- // simple INFO example
- // -------------------
- INFO("my value text is",my_value","devided by",divnum,"is",my_value/div_num);
-
- // output "my value text is 26.000000 divided by 5 is 5.200000\n";
-
- // INFO with VARVAL example
- // ------------------------
- INFO(VARVAL(my_value),"divided by",VARVAL(div_num),"is",VARVAL(my_value/div_num));
- // produces
- std::cout<<"my_value"<<"="<<' '<<''''<<my_value<<''''<<' '
-          <<"divided by"<<' '<<"div_num<<"="<<' '<<''''<<div_num<<''''<<' '
-          <<"is"<<' '
-          <<"my_value/div_num"<<' '<<''''<<my_value/div_num<<''''<<' '
-          <<std::endl;
-
- // output: "my_value= '26.000000' divided by div_num= '5' is my_value/div_num= '5.200000'\n"
-
-
- \endcode
-
- @remarks INFO delibberately is designed to avoid custom formatting to keep it as simple as possible.
-          If really needed you can still do custom formatting for a certain type of object by defining a operator<< .
-          Or sometimes fall back to ordinary printing.
-          Developers are in a hurry when debugging, they hate typing more then stricktly required, they should choose
-          INFO to display variables e.t.c. i.s.o. plain printf or cout<< . The other application is to fabricate
-          strings for embedded languages (aka a specific interpreter, html or embedded (dynamic) sql).
-*/
-#  if 1
-#     define INFO(...) tosics::util::info(__VA_ARGS__)
-#  else
-/// disabled: better then printf easy to use (with format specifier) printing for the sole purpose of debugging
-# define INFO(...)
-#  endif
-
-//:INFO_FUNC:// Fast easy display function
-#define INFO_FUNC INFO(BOOST_CURRENT_FUNCTION)
-
-#define FUNC_MSG(_MSGS) dynamic_cast<std::ostringstream&>((std::ostringstream()<< \
-    "File:"<<__FILE__<<" function:"<<BOOST_CURRENT_FUNCTION <<" line:"<<__LINE__<<": "<<_MSGS)).str()
 
 
 
