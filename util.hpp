@@ -363,7 +363,7 @@ size_t AlignSizeToMultiMin ( size_t _size_, size_t const& _min);
     inline to_T
 static_to_type_cast(to_T _toInstance, from_T _fromInstance)
 {
-    return static_cast<decltype(_toInstance)> ( _fromInstance );
+    return static_cast<decltype(_toInstance)>( _fromInstance);
 }
     template <typename T>
     bool
