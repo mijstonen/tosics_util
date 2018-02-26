@@ -115,7 +115,8 @@ member_of
     //                                                      //purpose of move. So move, still is actually a copy.
     //}
 
-    Owner_T* owner() noexcept
+        Owner_T*
+    owner() noexcept
     {
         // this method guarantees not to change this or owner by it self altough,
         // changes are allowed though the returned pointer. Otherwhise it should
@@ -126,7 +127,8 @@ member_of
         return  static_cast<Owner_T*>( static_cast<void*>(  pOwnerByteAdr  ));
     }
 
-    Owner_T const* owner() const noexcept
+        Owner_T const*
+    owner() const noexcept
     {
         // choosing const_cast away const and const_cast const back over repeteation of the same code
         return const_cast<Owner_T const*>( const_cast<member_of*>(this)->owner() );
