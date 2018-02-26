@@ -82,6 +82,10 @@ class preserve_base
         m_restore= _restore;
     }
 
+    void commit()
+    {
+        restore(false);
+    }
 
     //property (in/set)
     void onBeforeRestore(decltype(m_onBeforeRestore) const& _onBeforeRestore)
@@ -135,6 +139,17 @@ class preserve<T,UVW...> : public preserve<UVW...>
     {
     }
 
+    bool changed() const
+    {
+      if ( r==v ) {
+          // here the observed r is still the same as the stored v,
+          // but maybe in the rest of the pack something changed.
+          return preserve<UVW...>::changed();
+      }
+      // here: v!=r  aka, the observed value in r is changed against v
+      return true;
+    }
+
     ~preserve()
     {
         preserve_base::runOnce_onBeforeRestore();
@@ -162,6 +177,11 @@ public:
     preserve(preserve&&  _preserve_push)
     : preserve_base( std::move(_preserve_push))
     {
+    }
+
+    bool changed() const
+    {
+        return false;
     }
 };
 
