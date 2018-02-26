@@ -82,16 +82,20 @@ void preserve_demo_2(bool _fail)
 
     try {
         LOCAL_MODIFIED(a,d,pa,name);
+        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed()));
         INFO("intial:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
-        d=456;  a=2;  pa= &b;  name="Peter";
+        d=456;
+        a=2;
+        pa= &b;
+        name="Peter";
         INFO("modified:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
 
         if ( _fail ) {
             tu::ThrowBreak("demonstrating fail");
         }
-
+        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed()));
         // no exceptions thrown, pseudo commit, by disabling the restore mechanism
-        LOCAL_MODIFIED_OBJECTS.restore(false);
+        LOCAL_MODIFIED_OBJECTS.commit();
     }
     catch ( const char* excption_message )
     {
@@ -480,6 +484,9 @@ void append_splitted_demo()
 
 int main(int , char **)
 {
+    preserve_demo_2(/* _fail = */false );
+    return 0;
+
 #if 0
     INFO("Util demos");
     preserve_demo_0();
