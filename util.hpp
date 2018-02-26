@@ -69,6 +69,7 @@
 #define ITEMS_IN(_C_array)                               (sizeof _C_array/sizeof *_C_array)
 
 
+namespace tosics::util {
 //:Items_in
 /// MT20180209 NEW: And here is a way to do it generically with templates
     template <size_t N, typename T>
@@ -84,6 +85,7 @@ Items_in(std::initializer_list<T>& _t_list)
     return _t_list.size();
 }
 
+}//namespace tosics::util
 
 
 
@@ -952,7 +954,6 @@ Throw_Error_Break(const Exception_T& _e)
 /*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
 // NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
 }
-
 
 
 
