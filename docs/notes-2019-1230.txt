@@ -1,0 +1,9 @@
+Notes
+_____
+tosics::util can get a simple C++17 based file watcher in combination with tosics::util::SHA1 (jet to be renamed to StrongIdentifier)
+
+1. read: https://www.reddit.com/r/cpp/comments/afvpb1/c17_filesystem_writing_a_simple_file_watcher/
+code in: https://github.com/sol-prog/cpp17-filewatcher.git
+
+2. associate watched item with a map entry and generate each time from the collected data (should be file or directory(tree) modification data), a StrongIdentifier.
+3. if it differs from the previous identifier a change is detected.

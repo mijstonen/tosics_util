@@ -82,7 +82,7 @@ void preserve_demo_2(bool _fail)
 
     try {
         LOCAL_MODIFIED(a,d,pa,name);
-        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed()));
+        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed())); //shows false
         INFO("intial:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
         d=456;
         a=2;
@@ -93,7 +93,7 @@ void preserve_demo_2(bool _fail)
         if ( _fail ) {
             tu::ThrowBreak("demonstrating fail");
         }
-        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed()));
+        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed())); // shows true
         // no exceptions thrown, pseudo commit, by disabling the restore mechanism
         LOCAL_MODIFIED_OBJECTS.commit();
     }
@@ -241,7 +241,7 @@ void info_demo()
 #   endif
 
 
-    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),tu::HGREEN,VARCHRNUMHEX(highCtrl),tu::NOCOLOR,VARVAL(b),123,0.123,!b);
+    INFO(VARVAL(highCtrl),VARCHRNUM(highCtrl),HGREEN,VARCHRNUMHEX(highCtrl),NOCOLOR,VARVAL(b),123,0.123,!b);
 
     std::string alternative="Or write a ostream& operator << (ostream&,<your type>) operator for it.";
 
@@ -269,7 +269,7 @@ void info_demo()
     INFO("With macros: Better format and consistent display of variable names.", ENDL,
          VARVAL(aName),VARVAL(count),VARVAL(control));
     INFO("PTR... macros print the address value of the pointer and the value on that address", ENDL,
-         tu::HGREEN,PTRVALHEX(pcount),tu::NOCOLOR,PTRVAL(pcount));
+         HGREEN,PTRVALHEX(pcount),NOCOLOR,PTRVAL(pcount));
     pcount= nullptr;
     INFO("INFO handles NULL pointers (nullptr) well",PTRVAL(pcount));
     INFO(VARVAL(nullptr));
@@ -277,7 +277,7 @@ void info_demo()
 
     INFO_TO(std::cerr);
 
-    INFO("A hexadecimal value: ",tu::HGREEN,VARVALHEX(ulonghex),tu::NOCOLOR, "is decimal:",VARVAL(ulonghex));
+    INFO("A hexadecimal value: ",HGREEN,VARVALHEX(ulonghex),NOCOLOR, "is decimal:",VARVAL(ulonghex));
     INFO("As number:  ", VARCHRNUM(control),
          "    And same again as hex number:  ", VARCHRNUMHEX(control));
     INFO("INFO produces raw output for intended debugging purposes ONLY without formatting.");
@@ -501,7 +501,17 @@ int main(int , char **)
 #if 1
     STATEREPORT_demo();
 
-    LOCAL_MODIFIED();
+    // LOCAL_MODIFIED(); Does preserve nothing, gcc version >= 11.2 gives the following:
+    // warning: empty parentheses were disambiguated as a function declaration [-Wvexing-parse]
+    // remove parentheses to default-initialize a variable
+    // or replace parentheses with braces to value-initialize a variable.
+    // It is a debatable warning, the compiler should "see" it as a cpp macro, we could eventually suppress the warning.
+    // However, the best solution here is to simply remove the macro statement, since it has no effect.
+    // Second best (as saying, we might later want to preserve something) is to outcomment it.
+    // Thrird: we could put in a dummy variable to preserve.
+    // Since the policy is not to accept warnings, the -Wvexing-parse warning should not be ignored.
+    // ----------------
+    //LOCAL_MODIFIED();      // opting for 2nd
     INFO("Do somesthing");
 #endif
 

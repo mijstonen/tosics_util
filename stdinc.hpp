@@ -52,7 +52,7 @@
 #include <algorithm>
 #include <vector>
 #include <iterator>
-// #include <experimental/any>
+#include <any>
 #endif
 
 #if 1 // C++ stl
@@ -67,28 +67,31 @@
 #include <deque>
 #include <list>
 #include <forward_list>
-
+#include <unordered_set>
 #endif
 
-#if 0// C++ math
+#if 1// C++ math
 #include <complex>
-#include<valarray>
+#include <valarray>
 #endif
 
-#if 0 // C++ZZ
+#if 1 // C++ZZ
 #include <tuple>
+#include <typeindex>
+#include <typeinfo>
+#include <functional>
 #include <regex>
 #include <thread>
 #include <chrono>
 #include <type_traits>
-#include <functional>
 #endif
 
 #if 1 // practical adhock desires
 #include <type_traits>
-#include <experimental/filesystem>
-#include <experimental/optional>
+#include <filesystem>
+#include <optional>
 #include <boost/current_function.hpp>
+#include <boost/core/demangle.hpp>
 #endif
 
 #if 0 // get missing pieces from boost
@@ -118,11 +121,16 @@ ________________________________________________________________________________
 //     http://en.cppreference.com
 /**
  This include file is designed to be precompiled with
-    g++ -Wall -std=c++0x "$COMMON_OPTIONS" stdinc.h -o stdinc.h.gch
+    g++ -Wall -std=<latest> "$COMMON_OPTIONS" stdinc.h -o stdinc.h.gch
 
  and used as
 
-    g++ -Wall -std=c++1z -include stdinc.hpp "$COMMON_OPTIONS"<sources> ....
+    g++ -Wall -std=<latest> -include stdinc.hpp "$COMMON_OPTIONS"<sources> ....
+
+ for <latest> see man gcc search for -std options, with newer gcc versions, these change often
+
+     examples
+     -std=c++14 .... -std=gnu++23
 
  where the <sources> not need to include  stdinc.h and none of its enlisted files (and possibly more)
  This saves compilation time and development time for most applications, because time required to

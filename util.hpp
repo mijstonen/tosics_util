@@ -1,8 +1,8 @@
 #pragma once
 //util.hpp
 ////////////////////
-#define BUILD_ALL 1
-// BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
+#define BUILD_ALL 2
+// // BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
 // Touch , to force a rebuild all without make clean and also force ccache not to shortcut any way, make changes to
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,
 // as long it changes, increase it by one each time you request a complete rebuild makes sense.
@@ -12,6 +12,8 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_ 1
 
+
+#include "extra_type_traits.hpp"
 
 // Apply preprocessor options in Cmake
 // open configuration -> CMake -> Show advanced -> [x] Show Advanced Values
@@ -68,6 +70,10 @@
 /// get size of a native C array in number of items (capacity)
 #define ITEMS_IN(_C_array)                               (sizeof _C_array/sizeof *_C_array)
 
+//:LAMBDA_RETURN_RESULT_TYPE
+// The lambda execution resturned result type, without needing to instantiate a functor
+// see also its use in RunAndFinally
+#define LAMBDA_RETURN_RESULT_TYPE(_LambdaT) decltype( std::declval<_LambdaT>().operator()())
 
 namespace tosics::util {
 //:Items_in
@@ -152,13 +158,16 @@ Items_in(std::initializer_list<T>& _t_list)
 
  @param _action the '_action' must provide a int() or bool()
 
- If the assertion failes, the (failed) action is reported
+ If the assertion fails, the (failed) action is reported
  usage example: ASSERT_ALWAYS_DO(initialize_program())
 */
 # define ASSERT_ALWAYS_DO(_action) \
   ((_action) \
    ? __ASSERT_VOID_CAST (0) \
    : __assert_fail (__STRING(_action), __FILE__, __LINE__, __ASSERT_FUNCTION))
+
+// perform action when depending on ASSERT is enabled or not
+# define DEBUG_EXPRESSION(_action) _action
 
 #else // !DEBUG
 # ifndef NDEBUG
@@ -180,7 +189,31 @@ Items_in(std::initializer_list<T>& _t_list)
 // do action ignore result and but dont check, normal assert would not perform the action
 # define ASSERT_ALWAYS_DO(_action) __ASSERT_VOID_CAST ((_action))
 
+// perform action when depending on ASSERT is enabled or not
+# define DEBUG_EXPRESSION(_action)
+
 #endif  // DEBUG
+
+
+//{@ MT20180226 new code. Create unique id.
+
+#define STRINGIZE(x) STRINGIZE_SIMPLE(x)
+#define STRINGIZE_SIMPLE(x) #x
+
+#define CONCAT(first, second) CONCAT_SIMPLE(first, second)
+#define CONCAT_SIMPLE(first, second) first ## second
+
+#define MAKE_UNIQUE(PREFIX) CONCAT( PREFIX, CONCAT(__LINE__,CONCAT(_,__COUNTER__)))
+#define AUTO_ID CONCAT( AUTO_ID_PREFIX_$_, CONCAT(__LINE__,CONCAT(_,__COUNTER__)))
+
+// By convention prefix with file identifier in file scope by define and undef of AUTO_ID_PREFIX_$_
+#define AUTO_ID_PREFIX_$_ file_identifier_$_
+#undef  AUTO_ID_PREFIX_$_
+
+//}@ MT20180226 new code
+
+
+
 
 //:DROP_OUTPUT
 /**
@@ -258,27 +291,42 @@ Items_in(std::initializer_list<T>& _t_list)
  These operations evolved over the years, not all of it might be usefull the specific project.
  util moves from project to project and more functionallity is gathered.
 */
-namespace tosics::util {
+
+
 
     // NOTE: Deliberately restricted to (most usefull) foreground coloring.
     //       There are several ANSI console codes libraries for more sophisticated features.
-    constexpr char const* NOCOLOR = "\033[00m";
+// prefered for string literal concatination and use in (embedded) php
+#  define NOCOLOR  "\033[00m"
+#  define RED      "\033[00;31m"
+#  define YELLOW   "\033[00;33m"
+#  define GREEN    "\033[00;32m"
+#  define CYAN     "\033[00;36m"
+#  define BLUE     "\033[00;34m"
+#  define MAGENTA  "\033[00;35m"
+#  define WHITE    "\033[00;37m"
+#  define HRED     "\033[01;31m"
+#  define HYELLOW  "\033[01;33m"
+#  define HGREEN   "\033[01;32m"
+#  define HCYAN    "\033[01;36m"
+#  define HBLUE    "\033[01;34m"
+#  define HMAGENTA "\033[01;35m"
+#  define HWHITE   "\033[01;37m"
+#  define RESET    "\033[0m"
+// When more colors are needed, but restrict to the minimum that is needed.
+// eXtended colors, a few of 256 colors, see docs/colorcodes.txt for extending the set
+#  define XGREENYELLOW "\033[38;5;154m"
+#  define XLIGHTYELLOW3 "\033[38;5;187m"
+#  define XLIGHTSTEELBLUE1 "\033[38;5;189m"
+#  define DARKSEAGREEN1 "\033[38;5;193m"
+#  define XLIGHTCYAN1 "\033[38;5;195m"
+#  define XPINK1   "\033[38;5;218m"
+#  define XWHEAT1  "\033[38;5;229m"
+#  define XGREY35  "\033[38;5;239m"
 
-    constexpr char const* RED = "\033[00;31m";
-    constexpr char const* YELLOW = "\033[00;33m";
-    constexpr char const* GREEN = "\033[00;32m";
-    constexpr char const* CYAN = "\033[00;36m";
-    constexpr char const* BLUE = "\033[00;34m";
-    constexpr char const* MAGENTA = "\033[00;35m";
-    constexpr char const* WHITE = "\033[00;37m";
 
-    constexpr char const* HRED = "\033[01;31m";
-    constexpr char const* HYELLOW = "\033[01;33m";
-    constexpr char const* HGREEN = "\033[01;32m";
-    constexpr char const* HCYAN = "\033[01;36m";
-    constexpr char const* HBLUE = "\033[01;34m";
-    constexpr char const* HMAGENTA = "\033[01;35m";
-    constexpr char const* HWHITE = "\033[01;37m";
+
+namespace tosics::util {
 
 //{ SCX   stands for System Const eXPression.
 // Encapsulate system constants that trigger old-style-cast warnings.
@@ -301,7 +349,9 @@ using state_t = long;
 //:stateLiteralArg_t:// not passing a integer literal should be detected by the compiler (by using move semantics)
 using stateLiteralArg_t = state_t&&;
 
+
 //:State:// The intend is to make searches easy where a state is thrown or returned. Aka State(0) State(-1) State(12)
+         // Also a great place to put in breakpoints when debugging.
     inline state_t
 State(stateLiteralArg_t _state )
 {
@@ -558,8 +608,13 @@ ThrowBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default)
                  << "'    dumping stacktrace!"
                  << NOCOLOR<<std::endl
                  ;
+// TODO: demangeled backtrace
+//HINTS
+//https://linux.die.net/man/3/backtrace_symbols_fd
+//http://www.boost.org/doc/libs/master/libs/core/doc/html/core/demangle.html#core.demangle.header_boost_core_demangle_hpp
+//http://www.boost.org/doc/libs/1_65_0/doc/html/stacktrace.html
         DumpBacktraceInFileStream(STDERR_FILENO);
-    }
+    } // find(_break_category)
     throw _exception;
 }
 
@@ -598,8 +653,8 @@ struct ASJ_special
 Append_splitted( CONTAINER_T* strs_, std::string const& _str
                        , char const* _seps = ","
 #if 1  // 0 for clang workarround
-                       , std::experimental::optional<ASJ_special> const& _optAsj=
-                                                    std::experimental::optional<ASJ_special>()
+                       , std::optional<ASJ_special> const& _optAsj=
+                                                    std::optional<ASJ_special>()
 #endif
                )
 {
@@ -657,12 +712,17 @@ Append_splitted( CONTAINER_T* strs_, std::string const& _str
         return false;
     };
 
+
     //:maybe_append_strs_from_str_substr:// ..., when allow_empty is false then a empty substring is not added
         auto
     maybe_append_to_strs_from_str_substr = [&]() -> void
     {
         auto substr_len = pc - start;
         if ( allow_empty|| substr_len ) {
+
+static_assert(is_appendable_at_end<CONTAINER_T>::value,
+            "The used container should have methods emplace_back() and back");
+
             strs_->emplace_back();
             std::string& newStrRef= strs_->back();
             // Copy each char but without (single) QUOTER
@@ -743,7 +803,7 @@ Append_splitted( CONTAINER_T* strs_, std::string const& _str
 Append_splitted( CONTAINER_T* strs_, std::string const& _str, char const* _seps, ASJ_special const& _asj )
 {
     // std::cout<<HGREEN<<"Wrapped ASJ"<<NOCOLOR<<std::endl;
-    return Append_splitted( strs_, _str, _seps, std::experimental::make_optional(_asj));
+    return Append_splitted( strs_, _str, _seps, std::make_optional(_asj));
 }
     template <typename CONTAINER_T = std::vector<std::string> >
     state_t
@@ -819,27 +879,452 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
 //@} to be moved to separate unit
 
 
-#if 0
-    template<typename Last_T>
-    inline void
-Fake_use( Last_T const& /*_last*/)
-{
-    //(void)( _last);
-}
-    template<typename First_T, typename... Remaining_T>
-    inline void
-Fake_use( First_T const& _first, Remaining_T const&... _remaining)
-{
-    Fake_use( _first);
-    Fake_use( _remaining...);
-}
-#else // smarter, TODO: INCUBATE and TEST
     template<typename... _P>
+    constexpr
     inline void
 Fake_use(_P... /*_args*/ )
 {
     //(void)(_args),...;
 }
+
+extern std::vector<std::string> ProgramArguments;
+void Info_ProgramArguments();
+state_t LeftShiftOut_First_ProgramArgument(std::vector<std::string>::size_type _number_of_additiional_parameters=0);
+void On_signal(int _signal);
+void Initialize(int _argC, char const* _argV[]);
+// For now: Allow to use old name.
+#define ShowArgs Info_ProgramArguments
+
+//:__TU_FS:// Single and short replacement, namespace alias bad if used in header. Local to declarations here.
+#define __TU_FS std::filesystem
+state_t FileInPATH( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
+state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
+#undef __TU_FS
+
+//TODO: rename to DemangledTypeName
+//:type_name()  gets the demanged type name of type T
+    template<typename T>
+std::string type_name()
+{
+    return boost::core::demangle( typeid(T).name());
+}
+//:type_name(object)  gets the demanged type name of object
+    template<typename T>
+std::string type_name(T const &)
+{
+    return boost::core::demangle( typeid(T).name());
+}
+
+// MT20180304 new
+// The C++ system can not make types depending on the wordsize of the cpu for which it compiles.
+// Normally you do want that behaviour so the types are (to a certain level) not depending on
+// the cpu architecture (unless you make some common assumptions.
+// Here types are defined that will tune into the wordsize of the cpu (in actual_cpuword)
+// Probably determining the cpu word size (aka ACTUAL_CPUWORD_SIZE = 8 bits ... 64 bit) needs to be reviewed
+// and improved.
+
+constexpr int_fast16_t ACTUAL_CPUWORD_SIZE =  sizeof(unsigned char*) * CHAR_BIT;
+using ACTUAL_CPUWORD_SIZE_type = decltype(ACTUAL_CPUWORD_SIZE);
+
+template <decltype(ACTUAL_CPUWORD_SIZE) _Bits>
+struct cpuword
+: std::false_type  // unless specialized, no types provided _Bits
+{
+};
+
+template <>
+struct cpuword<8>
+: std::true_type
+{
+    using signed_type = int8_t;
+    using unsigned_type = uint8_t;
+};
+
+template <>
+struct cpuword<16>
+: std::true_type
+{
+    using signed_type = int16_t;
+    using unsigned_type = uint16_t;
+};
+
+template <>
+struct cpuword<32>
+: std::true_type
+{
+    using signed_type = int32_t;
+    using unsigned_type = uint32_t;
+};
+
+using actual_cpuword = cpuword<ACTUAL_CPUWORD_SIZE>;
+
+template <>
+struct cpuword<64>
+: std::true_type
+{
+    using signed_type = int64_t;
+    using unsigned_type = uint64_t;
+};
+
+/* A RAII_Counter can be used to monitor recursions or detect entering and leaving scope.
+ It has many purposes, from managing stacks, detect object method recursions, signalling of enterering and leaving scopes.
+*/
+    template <typename Counter_T> class
+    // Counter_T requires ++ and -- operators
+RAII_Counter
+{
+    Counter_T& m_cntref;
+
+  public:
+    RAII_Counter(Counter_T* _cntptr)
+    : m_cntref(*_cntptr)
+    {
+        ++m_cntref;
+    }
+
+    ~RAII_Counter()
+    {
+        --m_cntref;
+    }
+
+        Counter_T const&
+    cntref()
+        const
+    {
+        return m_cntref;
+    }
+};
+
+//:Mask    return value that can act as mask for _bits bits
+// example: Mask(8)==255
+    inline uint64_t
+Mask(uint8_t _bits)
+{
+    // for _bits>64 the result is Mask(64)
+    return ( 1ull << static_cast<uint64_t>(_bits) ) - 1ull;
+}
+
+#if 1
+//:Bits2str   of given value it writes #_bits to charBfr_ as '0'/'1' stream
+//            charBfr_ must have at least #(_bits+1) characters allocated before
+    template<typename Integer_T>
+    char const*
+Bits2str(char* charBfr_, decltype(sizeof(Integer_T)) bits, Integer_T _value)
+{
+    bits = std::min( bits, sizeof(Integer_T)* 8 ); // cut off bits to maximum size that fits (aka: 64 bits)
+    for ( char *cursor= charBfr_+bits-1; cursor>=charBfr_; --cursor ) {
+        *cursor = ( _value& 1 ) + '0';
+        _value>>= 1;
+    }
+    charBfr_[bits]='\0';
+    return charBfr_;
+}
+//            in simple and single thread scenario's the character buffer is provided within the routine
+    template<typename Integer_T>
+    char const*
+Bits2str(decltype(sizeof(Integer_T)) const _bits, Integer_T _value)
+{
+    static char char_buffer[1+(sizeof(Integer_T)*8)];
+    return Bits2str(char_buffer , _bits, _value);
+}
+#endif
+
+
+//TODO:
+// bool newer(const char* _leftfile, const char* _rightfile, bool return_on_fail)  // same as in c++shx.cpp except it should use std::filesystem
+//
+
+//:Is_Little_Endian Is initialized during runtime startup and will be true if running on a little endian processor, othewhise false.
+extern const bool Is_Little_Endian;
+
+// Use via SIGNATURETUPLE_HASH_CODE
+    template <typename... Args_P>
+    std::pair<size_t,size_t>
+_SignatureTuple_hash_codes(std::string _origin, Args_P... )
+    {
+        //std::cout<<"\n*********" << _origin<<"*********\n";
+        using signature_tuple_t = std::tuple<typename std::decay<Args_P>::type... >;
+        auto hashOf{[](std::string _s) { return   std::hash<std::string>{}(_s);}};
+        return std::pair<size_t,size_t>{ hashOf(_origin), hashOf(type_name<signature_tuple_t>()) };
+    }
+
+//:SIGNATURETUPLE_HASH_CODES
+// Creates hash codes for a list of types (the signature),
+// the first hash is of the origin as string, the second from the demangled typename.
+// The origin hash adds addtional differentiation to the type hash, for minimizing the chance of name hash clashes.
+// To be used for (cpx) meta coding template signature specific specializations of functions and data structures
+// These codes are to be used also at compiletime, but can be reproduced at runtime.
+// Objective is to make signature specific (specialized) data queues,@compiletime declared, selected at runtime.
+#define SIGNATURETUPLE_HASH_CODES(...) tosics::util::_SignatureTuple_hash_codes( \
+    std::string(__PRETTY_FUNCTION__) + std::string(VSTRINGS(__VA_ARGS__) ),__VA_ARGS__ )
+
+
+// Generic const cast wrapper functionality to reuse non-const function of method in const input and const output context
+
+struct ConstReturn_OverloadTag{
+};
+    extern ConstReturn_OverloadTag
+With_ConstReturn;
+
+    // ----- version: lambda const pointer
+    template< class C, typename R, typename L> R const&
+const_wrap_callable( L call_expression, C const& c)
+{
+    return const_cast<R const&>(call_expression(const_cast<C&>(c)));
+}
+    // ----- version: lambda const reference
+    template< class C, typename R, typename L> R const*
+const_wrap_callable( L call_expression, C const* c)
+{
+    return const_cast<R const*>(call_expression(const_cast<C*>(c)));
+}
+    // ----- version: function const pointer
+    template< class C,typename R,typename... A> R const*
+const_wrap( C const* c, R* (*f)(C*,A&&...),A&&...a)
+{
+    auto call_expression=[&](C* cc)->R*
+    {
+        return (*f)(cc,std::forward<A>(a)...);
+    };
+    return const_wrap_callable< C, R, decltype(call_expression) >( call_expression, c);
+}
+    // ----- version: function const reference
+    template< class C,typename R,typename... A> R const&
+const_wrap( C const& c, R& (*f)(C&,A&&...),A&&...a)
+{
+    auto call_expression=[&](C& cc)->R&
+    {
+        return (*f)(cc,std::forward<A>(a)...);
+    };
+    return const_wrap_callable< C, R, decltype(call_expression) >( call_expression, c);
+}
+    // ----- version: method const pointer
+    template< class C, typename R, typename... A> R const*
+const_wrap( C const* c, R* (C::*f)(A&&...),A&&...a)
+{
+    auto call_expression=[&]( C* cc)->R*
+    {
+        return (cc->*f)(std::forward<A>(a)...);
+    };
+    return const_wrap_callable< C, R, decltype(call_expression) >( call_expression, c);
+}
+    // ----- version: method const reference
+    template< class C, typename R, typename... A> R const&
+const_wrap( C const& c, R& (C::*f)(A&&...),A&&...a)
+{
+    auto call_expression=[&]( C& cc)->R&
+    {
+        return (cc.*f)(std::forward<A>(a)...);
+    };
+    return const_wrap_callable< C, R, decltype(call_expression) >( call_expression, c);
+}
+    template<typename _TypeT>
+    _TypeT*
+ConstRemovedFrom(const _TypeT* _object)
+{
+        using
+    nonconst_type = _TypeT*
+    ;
+        return
+    const_cast<nonconst_type>(_object)
+    ;
+}
+    template<typename _TypeT>
+    const _TypeT*
+ConstAddedFrom(_TypeT* _object)
+{
+        using
+    const_type = const _TypeT*
+    ;
+        return
+    const_cast<const_type>(_object)
+    ;
+}
+
+    template<typename _TypeT>
+    _TypeT&
+ConstRemovedFrom(const _TypeT& _object)
+{
+        using
+    nonconst_type = _TypeT&
+    ;
+        return
+    const_cast<nonconst_type>(_object)
+    ;
+}
+    template<typename _TypeT>
+    const _TypeT&
+ConstAddedFrom(_TypeT& _object)
+{
+        using
+    const_type = const _TypeT&
+    ;
+        return
+    const_cast<const_type>(_object)
+    ;
+}
+
+
+/*
+ In addition to const_wrap, to guarantee the origin can not be modified by modifying functions
+ after wrapping const cast,
+ duplicate can be used to duplicate the origin to the copy location, where the application
+ can manage the storage of that copy. After the (potentionally) modifying function is called,
+ the object on the copy location might be effected instead of the origin. When and if to use
+ it is up to the application.
+ Needless to say that this allows to use modifying methods of a class to get results from (otherwhise)
+ modified origin. This is usefull for implementing dry run's (assuming polite programming and methods
+ do not affect data outside the origin class instance).
+ */
+// Notice that duplicate can chain multiple copies
+// aka duplicate(&copy3 , duplicate(&copy2 , duplicate(&copy1 , origin)));
+
+template< class C>
+C const& duplicate(C* pcopy_, C const& _origin)
+{
+    ASSERT(pcopy_);
+    pcopy_-> ~C();
+    *pcopy_= _origin;
+    return *pcopy_;
+}
+
+//:ByteAddress_cast
+//Convert to pointer type that can be used to calculate byte offsets between them
+template <
+        typename _ClassT
+    >
+    std::byte *
+ByteAddress_cast(_ClassT* _pClassInstance)
+{
+    return reinterpret_cast<std::byte*>( _pClassInstance);
+}
+
+template <
+        typename _ClassT
+    >
+    constexpr std::byte const*
+ByteAddress_cast(_ClassT const* _pClassInstance)
+{
+    return const_wrap( _pClassInstance, &tosics::util::ByteAddress_cast<_ClassT>);
+}
+
+//:RunAndFinally
+// approximation of missing 'finally' in try catch independent from try catch
+// Introducing $$$ prefix for visible implementation details that you should not use in user programs.
+//
+    template<typename _RunF, typename _FinalF>
+    struct
+RunAndFinally
+;
+    template<typename _RunF, typename _FinalF>
+class $$$VoidRunAndFinally
+{
+    // everything is private, only the friend class(es) can use it
+    friend class RunAndFinally<_RunF,_FinalF>;
+
+    _FinalF m_final;
+
+    $$$VoidRunAndFinally(_RunF _run, _FinalF _final)
+    : m_final{_final}
+    {
+        try {
+            _run();
+        }
+        catch(...) {
+            m_final();
+            throw;
+        }
+    }
+
+    ~$$$VoidRunAndFinally()
+    {
+        m_final();
+    }
+}
+;
+    template<typename _RunF, typename _FinalF>
+class $$$ReturnRunAndFinally
+{
+    // everything is private, only the friend class(es) can use it
+    friend class RunAndFinally<_RunF,_FinalF>;
+
+    _RunF m_run;
+    using return_value_type = LAMBDA_RETURN_RESULT_TYPE(_RunF);
+    _FinalF m_final;
+    return_value_type return_value;
+
+    $$$ReturnRunAndFinally(_RunF _run, _FinalF _final)
+    : m_run{_run}, m_final{_final}
+    {
+        try {
+            // in case of exception, can not run destructor because instance is not being constructed
+            return_value = m_run();
+        }
+        catch(...) {
+            // finally handling for incompleted object
+            m_final();
+            throw;
+        }
+    }
+    ~$$$ReturnRunAndFinally()
+    {
+        m_final();
+    }
+}
+;
+    template<typename _RunF, typename _FinalF>
+    struct
+RunAndFinally
+{
+        using
+    implementing_type =
+        std::conditional_t< std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>,
+        /* then */ $$$VoidRunAndFinally<_RunF,_FinalF>,
+        /* else */ $$$ReturnRunAndFinally<_RunF,_FinalF>
+        >
+    ;
+  private:
+        implementing_type
+    m_implementor
+    ;
+  public:
+    RunAndFinally(_RunF _run, _FinalF _final)
+    : m_implementor{_run,_final}
+    {
+    }
+
+    LAMBDA_RETURN_RESULT_TYPE(_RunF) return_value()
+    {
+if constexpr(std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>){
+       // this property: return_value(), exists also if the return result type is void, but it does nothing
+        return;
+}else {
+        return m_implementor.return_value;
+}
+    }
+}
+;
+
+
+#if 0 // usage
+/*
+    int dums[]{1,2,3,4}; // immetate manipulated resource references
+    int return_value=-1;
+
+    RunAndFinally {decltype(std::declval<_RunF>()
+        [&]{ // Run
+           INFO(VARVALS(dums));
+           return_value = 0;
+        }, // And
+        [&]{ // Finally
+           ranges::for_each(dums,[](int& d_){ d_=0; });
+           INFO(VARVALS(dums,return_value));
+        }
+    };
+    // expressions here are executed if no thrown exception is in flight,
+    // so at normal completion or a earlier return
+    return return_value;
+*/
 #endif
 
 
@@ -847,28 +1332,36 @@ Fake_use(_P... /*_args*/ )
 
 
 
-extern std::vector<std::string> ProgramArguments;
-void Info_ProgramArguments();
-void On_signal(int _signal);
-void Initialize(int _argC, char const* _argV[]);
-// For now: Allow to use old name.
-#define ShowArgs info_ProgramArguments
 
-//:__TU_FS:// Single and short replacement, namespace alias bad if used in header. Local to declarations here.
-#define __TU_FS std::experimental::filesystem
-state_t FileInPATH( __TU_FS::path* canonical_path_, __TU_FS::path _filename, char const* _dirs=nullptr /* $PATH */);
-state_t PathWriteTime(std::time_t *time_,__TU_FS::path _path);
-#undef __TU_FS
 
-//TODO:
-// bool newer(const char* _leftfile, const char* _rightfile, bool return_on_fail)  // same as in c++shx.cpp except it should use std::experimental::filesystem
-//
+
+
+
+
+
+
+
+
+                    /*** INSERT NEW CODE ABOVE ***/
+
 
 } //namespace tosics::util
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //:FAKE_USE
 /// compiler portable suppress "unused variable" warning
 #define FAKE_USE(...) tosics::util::Fake_use(__VA_ARGS__)
+
+// __builtin_expect (long expression, long constant) expects that
+#define EXPECT(_expression,_value) (__builtin_expect (static_cast<long>(_expression),static_cast<long>(_value)))
+// else
+//#define EXPECT(_expression,_value) (_expression)
+//..(static_cast<long>(_expression)==static_cast<long>(_value))
+// endif gcc compiler
+
+#define EXPECT_true_FROM(_expression) EXPECT(_expression,true)
+#define EXPECT_false_FROM(_expression) EXPECT(_expression,false)
 
 
 /**********************************************************************************************************************/
@@ -932,29 +1425,7 @@ class classname has property propertyname
 // BROKEN: See ex[planation at DECLARE_SETTER
 // #define DECLARE_GETTER(propertyname) decltype(m_##propertyname) propertyname()
 
-//:Throw_Error_Break
-/**
-@deprecated
-Use template <typename EXCEPTION_T>
-void throwBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default) instead.
 
-@brief drop in replacement for a bare 'throw' expression to get a stack trace in a debugger during the exception
-
- @tparam[in] _e pass the exception of any Exception_T type
-
- Normally a exception hides the stack trace because it is unrolled the program is left at the catch handler.
- Putting a breakpoint on the catch handler is not (so) very usefull. But by wrapping each throw expression
- by this template function, you can use a debugger to display the stacktrace during the exception.
-
- */
-    template <typename Exception_T>
-    void
-Throw_Error_Break(const Exception_T& _e)
-{
-/*put a breakpoint here to have the stack trace in the debugger*/ throw _e; // pass the exception to some other handler
-// NOTE: When instrumenting source code (SeqIntra) ensure instrumenation of this method.
-}
-
-
+// if def compiler is gcc  (so far, always)
 
 #endif //UTILS_HPP_

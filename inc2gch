@@ -1,46 +1,51 @@
 #!/bin/sh
-# WORK_DIR="${CPX_WORK_DIR:-/tmp/cpx}"
-
-PRJ_PARENT_DIR="/home/michel/Projects/Kdevelop/"
- UTILS_INCLUDES_DIR="${PRJ_PARENT_DIR}util"
-  PREPROC_INCLUDE_DIR="${UTILS_INCLUDES_DIR}"
 
 if [ $# -lt 1 ]
 then
-    echo "Must specify the include file to precompile as first argument"
+    echo "inc2gch ERROR: Must specify the include file to precompile as first argument"
     echo ""
-    echo "syntax:   inc2gch name_of_include_file"
+    echo "inc2gch INFO: syntax:   inc2gch name_of_include_file"
     exit 1
 fi
 
 THIS_SCRIPT=$0
 INCLUDE_INPUT=$1
-# INCLUDE_INPUT_PATH="${WORK_DIR}/${INCLUDE_INPUT}"
-  PRECOMPILED_OUT_PATH="${INCLUDE_INPUT}.gch"
-  PRECOLPILE_LOG="$INCLUDE_INPUT.precompile.log"
+ PRECOMPILED_OUT_PATH="${INCLUDE_INPUT}.gch"
+ PRECOLPILE_LOG="$INCLUDE_INPUT.precompile.log"
 
-# STD_OF_CPP="c++14" # uncomment desired standard selection, c++14 should be default
-#STD_OF_CPP="c++1z"   # see man gcc , search: -std   near line 817
-STD_OF_CPP="gnu++1z" # experimental c++17
+# check gcc --help -v
+#STD_OF_CPP="c++14"  # uncomment desired standard selection, c++14 should be default
+#STD_OF_CPP="c++1z"  # see man gcc , search: -std   near line 817
+#STD_OF_CPP="gnu++17"
+#STD_OF_CPP="gnu++2a"  # experimental c++20
+STD_OF_CPP=gnu++23
 
-Precompiled_header_is_outdated () {
-    [ ! -f "$PRECOMPILED_OUT_PATH" ] ||
-     [ "$INCLUDE_INPUT" -nt "$PRECOMPILED_OUT_PATH" ] || [ "$THIS_SCRIPT"   -nt "$PRECOMPILED_OUT_PATH" ]
+final_precompiled_out_path=$(readlink --canonicalize "$PRECOMPILED_OUT_PATH")
+
+function Precompiled_header_is_outdated
+{
+     [ ! -f "$final_precompiled_out_path" ]  ||
+     [ "$INCLUDE_INPUT" -nt "$final_precompiled_out_path" ] ||
+     [ "$THIS_SCRIPT"   -nt "$final_precompiled_out_path" ]
 }
 
 ########################################
 
 if  Precompiled_header_is_outdated
 then
-    echo "Actializing (g++) precompiled header..."
+    echo "$THIS_SCRIPT: Actualizing (g++) precompiled header..."
 
     # cp "$INCLUDE_INPUT" "$INCLUDE_INPUT_PATH"  # only used if precompiled header can be used
 
-    PCCMD="ccache g++ -march=native -pipe -DDEBUG -ggdb -H -O0 \
+    PCCMD="g++ -march=native -pipe -DDEBUG -ggdb -H -O0 \
         -std=$STD_OF_CPP -fconcepts -fopenmp -rdynamic -x c++-header $INCLUDE_INPUT -o $PRECOMPILED_OUT_PATH 2>&1 | tee $PRECOLPILE_LOG"
-    eval "$PCCMD"
+    echo "PCCMD = '$PCCMD'"
+    eval "$PCCMD" | awk '/Multiple include guards may be useful for:/ {nextfile} {print}'
 else
-    echo "Precompiled header $PRECOMPILED_OUT_PATH, is up to date"
+    echo "$THIS_SCRIPT: Precompiled header $PRECOMPILED_OUT_PATH, is up to date"
 fi
 
-ls -lrth "$INCLUDE_INPUT" "$PRECOMPILED_OUT_PATH"
+ls -lrth "$INCLUDE_INPUT" "$PRECOMPILED_OUT_PATH" "$final_precompiled_out_path"
+
+echo "$THIS_SCRIPT OK: done"
+echo ""
