@@ -17,7 +17,7 @@
 
  When STATEREPORT is disabled it will not report unexpected values, it will pass the return value of the call unchanged.
 
- @remark With disabling, also the advantages of STATEREPORT is lost. It's your responsibillity to decide what is more
+ @remark With disabling, also the advantages of STATEREPORT are lost. It's your responsibillity to decide what is more
          importand, except that the customer could in rare cases encounter a message from STATEREPORT or be silent
          about unexpected states.
          Personally I would keep STATEREPORT always active.
@@ -51,7 +51,7 @@ namespace tosics::util {
                         is SR_EXCLUDE_ALL(0,1,-3) is SR_EXCLUDE_0_AND(1,-3) )
 
  @param [in] _what  (optional) choose what to report, in all cases; except what is in the exclusions list
-  - 0 'q' 'Q'  report nothing
+  - 0 'q' 'Q'  Be quiet, report nothing
   - 1 'n' 'N'  only report notifications (positive return statements)
   - 2 'e' 'E'  only report errors (negative return statements)
   - 3 'a' 'A'  report all, note that this is used rarely explicitly because if _what is ommited then 3 is asumed

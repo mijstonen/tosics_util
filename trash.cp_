@@ -1,0 +1,276 @@
+    template<typename Object_T, typename... Args_P> class
+Slot
+:   public slot_base<Args_P...>
+,   protected slot_is_nested_of<Object_T>
+{
+  protected:
+        using
+    memberfunc_type       = void (Object_T::*)(Args_P...);
+        using
+    memberfunc_const_type = void (Object_T::*)(Args_P...) const;
+
+    static_assert ( sizeof(memberfunc_type)==sizeof(memberfunc_const_type) );
+
+        union
+    memfn_views
+    {
+        friend class Slot;
+      private:
+        memberfunc_const_type  const_view;
+        memberfunc_type        mutbl_view;
+
+      public:
+        memfn_views(memberfunc_type const& _mutbl_view) : mutbl_view(_mutbl_view) {}
+        memfn_views(memberfunc_const_type const& _const_view) : const_view(_const_view) {}
+
+            template <typename Func_T> memfn_views&
+        operator = (Func_T const& _memfn)
+        {
+            new(this) memfn_views( _memfn);
+            return *this;
+        }
+            memfn_views&
+        operator = (memfn_views const& _other)
+        {
+            mutbl_view= _other.mutbl_view;
+            return *this;
+        }
+
+        bool operator == ( memberfunc_type const& _mutbl_view) const { return _mutbl_view == mutbl_view; }
+        bool operator == ( memberfunc_const_type const& _const_view) const { return _const_view == const_view; }
+    };
+
+
+
+  public:
+    //std::atomic<memfn_views> memfn;
+    memfn_views memfn;
+    Memberfunction<memberfunc_type>  memfn_r;
+
+        template<typename Func_T>
+    Slot(Object_T* _pObject_, Func_T _memfn)
+    : slot_base<Args_P...>(), slot_is_nested_of<Object_T>(_pObject_), memfn(_memfn)
+    {}
+
+    void invoke(Args_P..._args) const override  {  (this->mutable_outer()->*memfn.mutbl_view) ( _args...); }
+};// Slot
+
+
+            if ( ProgramArguments.size()>1 ) {
+                ofstream diagnostics(ProgramArguments[1],std::ios::app);
+                if ( diagnostics ) {
+                    LOCAL_MODIFIED(INFO_STREAM_PTR);
+                    INFO_TO(diagnostics);
+                }
+                else {
+                    // sorry, I have tpo tell it, even it will messup things
+                    std::cerr<< "Failed to oopen diagnostics file:["<<ProgramArguments[1]<<"]"<<endl;
+                }
+            }
+        if ( bitsremaining> 31) {
+            // We can not use stderr and stdout
+            // but if a argument is given,
+            // then assume that it is a filename to write diagnostic messages to.
+            if (diagnostics) INFO("tinysha1: WARNING Exceeding buffering of max 64 bits:",VARVAL(bitsremaining));
+            bitsremaining=32;
+        }
+
+
+        auto // lambda
+    process1uint32word=[&](uint32_t _word)
+    {
+        auto bitstoshft=
+            [](uint32_t _rest) {
+                uint64_t highest=1;
+                while(_rest) {
+                    ++highest;
+                    _rest>>=1;
+                }
+                return highest;
+            }(shiftbuffer);
+
+        shiftbuffer+= ( _word<< (bitstoshft) );
+        INFO("Start:",VARVALS(bitstoshft),VARVALHEX(_word),VARVALHEX(shiftbuffer));
+        while( shiftbuffer ) {
+            select= shiftbuffer& 0x3F; // mask lowest 6 bits, get selection index in range 0..63
+            ( *pUnc64 )= NUMS_0_63_TO_CHAR[ select];
+            shiftbuffer>>=6;
+            INFO(VARVALS(*pUnc64,select),VARVALHEX(shiftbuffer));
+            ++pUnc64;
+        }
+    };
+        auto // lambda
+    process1uint32word=[&](uint32_t _shiftbuffer)
+    {
+        //INFO("Start:",VARVALHEX(_shiftbuffer));
+        while( _shiftbuffer ) {
+            select= _shiftbuffer& 0x3F; // mask lowest 6 bits, get selection index in range 0..63
+            if ( select>61 ) {
+                // avoid . and _ in result so we always get [0-9A-Za-z]+ as result
+
+                select= ( select*(1+prior_select) ) % 53;
+            }
+            ( *pUnc64 )= NUMS_0_63_TO_CHAR[ select];
+            prior_select= select;
+            _shiftbuffer>>=6;
+            //INFO(VARVALS(*pUnc64,select),VARVALHEX(_shiftbuffer));
+            ++pUnc64;
+        }
+    };
+
+    for(auto digElem: digest) process1uint32word( digElem);
+    process1uint32word( m_heur);
+    assert( pUnc64<= m_outputbuffer+ sizeof m_outputbuffer); // ensure remained within bounds
+    *pUnc64= '\0';
+
+    // convert first char so it will always, so it is never [0-9], by uniformly limiting the selection range to 10..61 -> A..z
+    auto // lambda
+    char_to_num_0_63=[](char _c) {
+        for (uint64_t num=0; num<62; ++num) {
+            if ( _c== NUMS_0_63_TO_CHAR[ num] ) return num;
+        }
+        assert(false); // must use valid char to search
+        return static_cast<uint64_t>(-1);  // in release mode, but this may never happen _c must be one of chars in NUMS_0_63_TO_CHAR
+    };
+    uint64_t first_select= char_to_num_0_63( m_outputbuffer[1]) % 52;
+    first_select+=10;
+    m_outputbuffer[0]= NUMS_0_63_TO_CHAR[ first_select];
+    //INFO(VARVAL(m_outputbuffer[1]),VARVAL(m_outputbuffer[0]));
+
+    return m_outputbuffer;
+
+
+        processBytes( std::string _s )
+    {
+        //uint32_t semi=m_heur;
+        for( auto c: _s) {
+            m_heur+= static_cast<uint32_t>(static_cast<unsigned char>(c));
+            //semi>>= 1;
+            //if ( semi ) continue;
+            //m_heur+=  ( m_heur>> 12 );
+            //semi= m_heur;
+        }
+
+        //INFO(VARVAL(m_heur));
+
+        size_t len= _s.length();
+        void const* const data= static_cast<void const*const>( _s.data());
+        sha1::SHA1::processBytes( data, len);
+    }
+
+
+    // see at bottom of https://gist.github.com/graphitemaster/494f21190bb2c63c5516
+// TODO: substitute offset_to_owner
+// The benefit is that it does not need to do arithmetic operations, hence the compiler
+// is able to replace it by a compiletime constant (altough, no constexpr becauese it evaluates
+// at the usage location (typically a owner type constructor
+#define MS_OFFSET(s,m) ((::ptrdiff_t)&reinterpret_cast<char const volatile&>((((s*)0)->m)))
+
+        // initialize 8 tail characters as one 64 bit word
+        reinterpret_cast<uint64_t*>(m_outputbuffer)[4]=0ul;
+        // Not need to zero terminate and all unused tail characters are be zerood when this->outputbuffer() is called.
+        // Possibly the entire buffer is hot, in the cache.
+
+//{@ new MT B0128
+// replace commonly used pattern, to be used in argument lines
+// aka is_sorted(long_container_name.begin(),long_container_name.end() replacing by is_sorted(BEGIN_TO_END(long_container_name))
+#define BEGIN_TO_END_OF(_container) _container.begin(), _container.end()
+//}@ new MT B0128
+
+#if 0
+//:Finally
+// Use as simple as possible RAII technique to compensate for missing finally of try-catch.
+// Bonus: Finally does not depend on try catch and can be used anywhere independendly.
+// See also library fundamentals TS v3 scope_exit
+    template<
+        typename _LambdaT
+    >
+    struct
+Finally
+{
+    _LambdaT m_lambda;
+    explicit Finally(_LambdaT _lambda)
+    : m_lambda(_lambda)
+    {
+    }
+    ~Finally()
+    {
+        m_lambda();
+    }
+};
+#endif
+
+#if 0 // Finally usage example
+        Finally
+    endScopeWith{[&]()
+    {   /*
+            operations that need to be done before leaving the current { scope }, no matter
+            how (return, throw, in catch, after catch, normal end of scope) excep for
+            emergency exit / abort calls that do not unroll the stack along with destructor calls.
+
+            With [&] all scope visals can be reached.
+            */
+    }};
+#endif
+//needs 2 arguments
+IMPLEMENT_SHIFTLEFT_FOR(std::map);
+
+
+#if 0
+    template<
+         typename OS_T,
+         template<
+             typename _T,
+             typename ..._R
+         > typename CONTAINER_T,
+         typename CharT,
+         typename... R,
+         typename Traits = std::char_traits<CharT>,
+         typename Allocator = std::allocator<CharT>,
+         typename std::enable_if_t<
+                       ! std::is_same_v< CONTAINER_T<CharT,R...>,std::basic_string<CharT,Traits,Allocator> >
+                      && is_iterable_v<  CONTAINER_T<CharT,R...> >
+                       , int> = 0
+    >
+    OS_T&
+operator <<  (OS_T& os_,  CONTAINER_T<CharT,R...>const& _container )
+{
+    return _operator_shiftleft_body( os_ , _container);
+}
+#endif
+
+#if 0
+    template<
+         typename OS_T,
+         template<
+             typename ..._R
+         > typename CONTAINER_T,
+         typename... R,
+         typename std::enable_if_t<is_iterable_v<CONTAINER_T<R...> >
+                       , int> = 0
+    >
+    OS_T&
+operator <<  (OS_T& os_,  CONTAINER_T<R...>const& _container )
+{
+    return _operator_shiftleft_body( os_ , _container);
+}
+#endif
+
+#define SOURCE_ENABLED 0
+
+#define IMPLEMENT_SHIFTLEFT_FOR(_CONTAINER_TYPE) template<typename OS_T,typename... T> \
+OS_T& operator << (OS_T& os_,_CONTAINER_TYPE<T...>const& _container){return _operator_shiftleft_body(os_,_container);}
+IMPLEMENT_SHIFTLEFT_FOR(std::vector);
+IMPLEMENT_SHIFTLEFT_FOR(std::deque);
+IMPLEMENT_SHIFTLEFT_FOR(std::forward_list);
+IMPLEMENT_SHIFTLEFT_FOR(std::list);
+IMPLEMENT_SHIFTLEFT_FOR(std::array);
+/* IMPLEMENT_SHIFTLEFT_FOR .... for the remaining containes defined in stdinc
+multiset
+multimap
+unordered_set
+unordered_multiset
+unordered_map
+unordered_multim
+*/
+<? $words=explode("|","a|b|c|d|e|g|h|i"); ?>

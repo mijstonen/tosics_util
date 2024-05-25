@@ -20,15 +20,12 @@ template <> class preserve<>;
 /**
  @brief Base serves as single place to implement functionallity for the (variadic) preserve<...> template.
 */
+
+
 class preserve_base
 {
-    static std::function<void(preserve_base*)> OnBeforeRestore_dummy_lambda()
-    {
-        return [&](preserve_base*)
-        {
-          //  DBG_INFO("dummy_lambda"); // for test and debug
-        };
-    };
+// configure OnBeforeRestore, disable when not needed because std::function causes a lot of overhead.
+#define PRESERVE_HAS_ONBEFORERESTORE 0
 
   private:
     //bool m_restore=true;
@@ -38,15 +35,33 @@ class preserve_base
         unsigned m_restore:1;
     };
 
-
+#if PRESERVE_HAS_ONBEFORERESTORE
+  private:
+    static std::function<void(preserve_base*)> OnBeforeRestore_dummy_lambda()
+    {
+        return [&](preserve_base*)
+        {
+          //  DBG_INFO("dummy_lambda"); // for test and debug
+        };
+    };
     std::function<void(preserve_base*)> m_onBeforeRestore = OnBeforeRestore_dummy_lambda();
 
   protected:
     void runOnce_onBeforeRestore()
     {
         m_onBeforeRestore(this);
-        m_onBeforeRestore = preserve_base::OnBeforeRestore_dummy_lambda();
+        m_onBeforeRestore = OnBeforeRestore_dummy_lambda();
     }
+  public:
+    //property (in/set)
+    void onBeforeRestore(decltype(m_onBeforeRestore) const& _onBeforeRestore)
+    {   m_onBeforeRestore= _onBeforeRestore;
+    }
+#else
+    protected: void runOnce_onBeforeRestore(){
+
+    }
+#endif
 
   public:
 
@@ -54,7 +69,6 @@ class preserve_base
     : m_restore(true)
     {
     }
-
 
     preserve_base(preserve_base& _origin)
     : m_restore(true)
@@ -68,6 +82,10 @@ class preserve_base
         _origin.restore(false);  // only the copied preserve instance will restore, not its origin
     }
 
+    ~preserve_base()
+    {
+        preserve_base::runOnce_onBeforeRestore();
+    }
 
 
     //property (out/get)
@@ -86,12 +104,6 @@ class preserve_base
     {
         restore(false);
     }
-
-    //property (in/set)
-    void onBeforeRestore(decltype(m_onBeforeRestore) const& _onBeforeRestore)
-    {   m_onBeforeRestore= _onBeforeRestore;
-    }
-
 };
 
 /**
@@ -112,9 +124,9 @@ class preserve_base
             LOCAL_MODIFIED_OBJECTS
             LOCAL_MODIFIED
 
-  @remark  To use it '#include <util/preserve.cpp>'
-  @remark  Be cautios when applying LOCAL_MODIED or PRESERVE_IN macros to global variables in combination with threads.
-           It is safer to use thread_local variables and apply to them.
+ @remark  To use it '#include <util/preserve.cpp>'
+ @remark  Be cautios when applying LOCAL_MODIED or PRESERVE_IN macros to global variables in combination with threads.
+          It is safer to use thread_local variables and apply to them.
  */
 template<typename T, typename... UVW>
 class preserve<T,UVW...> : public preserve<UVW...>
@@ -152,7 +164,6 @@ class preserve<T,UVW...> : public preserve<UVW...>
 
     ~preserve()
     {
-        preserve_base::runOnce_onBeforeRestore();
         if ( preserve_base::restore() ) {
             r= v;
         }
@@ -186,7 +197,7 @@ public:
 };
 
 
-template <typename... T>  class preserve<T...> make_preserve(T&... /* refs*/)
+template <typename... T>  /*class*/ preserve<T...> make_preserve(T&... /* refs*/)
 {
   ASSERT(false); // DO NOT CALL THIS METHOD, it is only supplied for the type system
   // needed in decltype of macro
@@ -194,8 +205,8 @@ template <typename... T>  class preserve<T...> make_preserve(T&... /* refs*/)
 
 
 } // namespace util
-
 #define preserve_INSTANCE(...) decltype(tosics::util::make_preserve(__VA_ARGS__))
+
 // Macro's for users
 
 /// @brief Make a named preserve instance and list the objects to be preserved after it, see preserve demos 0 in util_demos.cpp
@@ -203,6 +214,7 @@ template <typename... T>  class preserve<T...> make_preserve(T&... /* refs*/)
 
 /// @brief Retrieve the standard name of the preserve instance, see preserve demos 1 and 2 in util_demos.cpp
 #define LOCAL_MODIFIED_OBJECTS __anonymous__PreserveInstance__
+//#define LOCAL_MODIFIED_OBJECTS AUTO_ID
 
 /// @brief Users (by default) should use this macro, see preserve demos 1 and 2 in util_demos.cpp
 /// @remark Should only used once in a compund statement, alternatively use PRESERVE_IN

@@ -23,30 +23,30 @@
 // pedantic: -_M_offset_to_owner< (1<<30)   (fails on abnormal huge (larger then 1G) owner object
 // Asserts ommitted because the conditions are extreemly unlikely on 64 bit systems.
 //
-// About defaults for Offset_T and MAX_OFFSET.
+// About defaults for Offset_T and END_OFFSET.
 // As multiple members occupy unneccesary bytes for storring the offset for likely owner
-// objects being smaller then UINT16_MAX (aka 32KByte), the offset is stored in sizeof(uit16) (aka 2) byte
+// objects being smaller then UINT16_MAX (aka 64 KByte), the offset is stored in sizeof(uit16) (aka 2) byte
 // offset_type, saving unused memory. Note that the compiler can still align addresses and take up more
 // space, but when space optimized, the compiler may take advanatage of it.
-// Alternatively change type fror Offset_T and change MAX_OFFSET accordingly.
 //
+// END_OFFSET is the maximum value of the offset + 1 . Offset_T should be a is_unsigned type (aka uint 8 16 32 64 _t)
+// END_OFFSET will have all the bits set, representing UINTxx_MAX or -1 in signed representation.
 //
 
-
+// ??? #define MS_OFFSET(s,m) ((::ptrdiff_t)&reinterpret_cast<char const volatile&>((((s*)0)->m)))
 
 namespace tosics::util {
 
+
     template<
         typename Owner_T,
-        typename Offset_T = uint16_t, ptrdiff_t MAX_OFFSET = UINT16_MAX  //Change Offset_T and UINT16_MAX together
+        typename Offset_T = int16_t,
+        ptrdiff_t BEGIN_OFFSET = std::numeric_limits<Offset_T>::min(),
+        ptrdiff_t END_OFFSET = std::numeric_limits<Offset_T>::max()
     >
     class
 member_of
 {
-  private:
-    constexpr static Offset_T OFFSET_TO_OWNER_UNSET = -1;
-
-
 #if NEEDS_BYTE_DEFINITION
         enum class
     e_byte
@@ -58,6 +58,7 @@ member_of
     using byte_type = std::byte;
 #endif
 
+
         Offset_T
     offset_to_owner(Owner_T* _owner) noexcept
     {
@@ -65,22 +66,23 @@ member_of
         byte_type* pMemberByteAdr { static_cast<byte_type*>(static_cast<void*>(this)) };
         ptrdiff_t  return_value   { pMemberByteAdr- pOwnerByteAdr };
 
-        static_assert( sizeof(Owner_T)< MAX_OFFSET,"Practically limited size of Owner_T, otherwise modify template args." );
+ static_assert(sizeof(Owner_T)<END_OFFSET,"Practical limited size of Owner_T, otherwise modify template args.");
 
-        ASSERT( return_value>= 0 );//member should be on or abouve lower bound of  its owner
+        ASSERT( return_value>= 0 );//member should be on or above lower bound of  its owner
         ASSERT( sizeof(Owner_T)> static_cast<size_t>(return_value) );//member should be below upper bound of its owner
-        ASSERT( return_value< MAX_OFFSET ); // casting may not cause loss of digits
+        ASSERT( return_value< END_OFFSET ); // casting may not cause loss of digits
 
         return static_cast<Offset_T>(return_value);
     }
 
   protected:
-    const Offset_T _M_offset_to_owner = OFFSET_TO_OWNER_UNSET;
+    const Offset_T _M_offset_to_owner = END_OFFSET;
 
-    member_of() noexcept
-    : _M_offset_to_owner(OFFSET_TO_OWNER_UNSET)
-    {
-    }
+#if 1
+    member_of() = default;
+#else
+    member_of() = delete;
+#endif
 
     member_of(Owner_T* _owner) noexcept
     : _M_offset_to_owner(offset_to_owner(_owner))
@@ -90,7 +92,7 @@ member_of
 
     // if _M_offset_to_owner is already initialized, it should not be changed by copying, that's incorrect
     member_of(const member_of& _from) noexcept
-    : _M_offset_to_owner( _M_offset_to_owner==OFFSET_TO_OWNER_UNSET ? _from._M_offset_to_owner : _M_offset_to_owner)
+    : _M_offset_to_owner( _M_offset_to_owner==END_OFFSET ? _from._M_offset_to_owner : _M_offset_to_owner)
     {
         ASSERT( _M_offset_to_owner!=_from._M_offset_to_owner );
 
@@ -100,9 +102,8 @@ member_of
 
     member_of& operator = (const member_of& _from) noexcept
     {
-        // emplace copy
+        // emplace copy, so = behaves like copy constructor
         new(this) member_of(_from);
-
         return *this;
     }
 
@@ -122,7 +123,6 @@ member_of
         // changes are allowed though the returned pointer. Otherwhise it should
         // not be reused in the const version below.
 
-        ASSERT(_M_offset_to_owner<sizeof(Owner_T));
         byte_type*   pOwnerByteAdr{ static_cast<byte_type*>( static_cast<void*>( this))- _M_offset_to_owner };
         return  static_cast<Owner_T*>( static_cast<void*>(  pOwnerByteAdr  ));
     }

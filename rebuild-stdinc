@@ -1,10 +1,12 @@
 
-### rm stdinc.hpp.gch   # optional / for testing
+# rm stdinc.hpp.gch   # optional / for testing
 
 # files and directories / depended settings
-PRJ_PARENT_DIR="/home/michel/Projects/Kdevelop/"
- UTILS_INCLUDES_DIR="${PRJ_PARENT_DIR}util/"
+PRJ_PARENT_DIR="/home/michel/Projects/Kdevelop"
+ UTILS_INCLUDES_DIR="${PRJ_PARENT_DIR}/util"
 
-cd "${UTILS_INCLUDES_DIR}"
+cd "${UTILS_INCLUDES_DIR}/"
 inc2gch stdinc.hpp
+# backup_stdinc.hpp.gch is used to restore stdinc.hpp.gch in target tmpfs path (aka: /run/..... ) if stdinc.hpp.gch it self is a dangeling symlink
+cp -v --update stdinc.hpp.gch backup_stdinc.hpp.gch
 cd -
