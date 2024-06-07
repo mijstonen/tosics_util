@@ -1,14 +1,14 @@
 #!/usr/bin/env cpx
 
-         // This is proto typing and research, of cause it should be refactored into cpx_stdphp.hpp as class EnumGenerator
-         // What has begun as just showing the program arguments, has now turned into prototyping
-         // C++ enum automation
-         // -------------------
-         // One big anoyance in C++ is the representation of enums, unless you have some fancy reflection tools (aka QT moc)
-         // you cannot present enums out of the box. Here is some PHP based code generation that solves this.
+// This is proto typing and research, of cause it should be refactored into cpx_stdphp.hpp as class EnumGenerator
+// What has begun as just showing the program arguments, has now turned into prototyping
+// C++ enum automation
+// -------------------
+// One big anoyance in C++ is the representation of enums, unless you have some fancy reflection tools (aka QT moc)
+// you cannot present enums out of the box. Here is some PHP based code generation that solves this.
 
- #define PHPVAR_ENUM_WORDS ${$enumClass."_words"}
- #define MAKE_ENUM(enumClassName,eNumNameChain) <? $enumClass=#enumClassName; PHPVAR_ENUM_WORDS=explode("|",#eNumNameChain); ?>
+ #define PHP_ARRAY_ENUM_WORDS ${$enumClass."_words"}
+ #define MAKE_ENUM(enumClassName,eNumNameChain) <? $enumClass=#enumClassName; PHP_ARRAY_ENUM_WORDS=explode("|",#eNumNameChain); ?>
  // The only place where the enum is defined, '|' is used as separator because the C/C++ prepocessor cannot cope with ',' which it uses for argument separation.
  MAKE_ENUM(Dodo,a|b|c|d|e|g|h|i|stop)
 
@@ -20,7 +20,7 @@
  #define  $$$STRINGENUM_PAIR(i){ENUM_STRINGS[static_cast<int>(i)],i}
  #define STRINGENUM_PAIR(enumItemName) $$$STRINGENUM_PAIR(ENUM_CLASS::enumItemName)
 
- #define ENUM_FOREACH <?foreach(PHPVAR_ENUM_WORDS as $w){?>
+ #define ENUM_FOREACH <?foreach(PHP_ARRAY_ENUM_WORDS as $w){?>
  #define ENUM_ITEM <?=$w?>
  #define ENUM_ITEM_STRING <?='"'.$w.'"'?>
  #define ENUM_END_FOREACH <?}?><?PHP_MARKSRCLINE?>
@@ -81,18 +81,43 @@
 
  <?
  function index_for( $index_var_name, $max_index_initializer,$srcFileAtCall,$srcLineAtCall) {
- echo<<<EOSSS
+ echo<<<End_Of_string
      const auto max_$index_var_name($max_index_initializer);
      for ( std::remove_const< decltype(max_$index_var_name)>::type $index_var_name(0);
          $index_var_name< max_$index_var_name;
          ++$index_var_name ) /* for body ( aka {....} ) must follow when used */
- EOSSS;
+ End_Of_string;
  PHP_ATMARKSL($srcFileAtCall,$srcLineAtCall); // fool the compiler as if where still on the first line of macro expansion
  }
  ?>
  #define INDEX_FOR(itr_var, max_expr) <?index_for(#itr_var,#max_expr,__FILE__,__LINE__);?>
+ 
+ void log(const std::string_view message,
+          const std::source_location location=std::source_location::current())
+{
+    INFO(VARVALS(location.file_name(),location.line(),location.column(),location.function_name(),message));
+}
 
-#(
+
+namespace testlog 
+{
+
+    void 
+foo(const char* message)
+{
+    log(message);
+}
+
+    void 
+foo(int message)
+{
+    log(STREAM2STR("number:"<<message));
+}
+
+} // namespace testlog 
+
+
+#!
     INFO(VARVALS(ProgramArguments));
     {INDEX_FOR(a,ProgramArguments.size()){
             INFO(VARVALS(a,ProgramArguments[a]));
@@ -100,6 +125,9 @@
     double relativity[10][10];
     const unsigned range[]={0,1,2,3,4,5,6,7,8,9};
 
+    testlog::foo("One");
+    testlog::foo(1);
+        
     INFO(VARVALS(relativity));
     for(auto i:range){
         for(auto j:range){
@@ -129,4 +157,4 @@
             break;
         }
     }
-#)
+

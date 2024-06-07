@@ -582,7 +582,7 @@ void DumpBacktraceInFileStream(int backtrace_output_filehandle_ = STDERR_FILENO)
 //:ThrowBreak:// Use it i.s.o. naked throw and put breakpoints in it and see full backtrace in debugger
     template <typename EXCEPTION_T>
     [[ noreturn ]] void
-ThrowBreak(EXCEPTION_T _exception, eBreakCategory _break_category = eBC_default)
+ThrowBreak(const EXCEPTION_T& _exception, eBreakCategory _break_category = eBC_default)
 {
     const std::set<eBreakCategory> NoBacktraceCategory{ eBC_handled };
 
@@ -1306,9 +1306,9 @@ if constexpr(std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>){
 }
 ;
 
+#if NO_COMMENT
+// usage
 
-#if 0 // usage
-/*
     int dums[]{1,2,3,4}; // immetate manipulated resource references
     int return_value=-1;
 
@@ -1325,7 +1325,7 @@ if constexpr(std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>){
     // expressions here are executed if no thrown exception is in flight,
     // so at normal completion or a earlier return
     return return_value;
-*/
+
 #endif
 
 

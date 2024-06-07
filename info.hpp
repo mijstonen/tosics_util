@@ -93,7 +93,7 @@
 
 
 //@{
-/// @brief macros debending on preprocessor definitions DEBUG and ALLOC_DEBUG
+/// @brief macros depending on preprocessor definitions DEBUG and ALLOC_DEBUG
 
 //:DBG_INFO
 #  if DEBUG

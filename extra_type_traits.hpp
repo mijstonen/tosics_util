@@ -3,8 +3,6 @@
 #ifndef TYPE_TRAITS_
 #  define TYPE_TRAITS_ 1
 
-
-
 namespace tosics::util
 {
 
