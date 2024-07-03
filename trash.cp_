@@ -42,6 +42,12 @@ Slot
 
 
 
+                // customized cpx include #+name turns into #include "cpx-name"
+                work_input << "\n#include " << '"' << "cpx-";
+                work_input<< get_line_from_source()<< '"' << "    /*    #+    */\n";
+                work_input<< sourceLineMarking()<< '\n';
+
+
   public:
     //std::atomic<memfn_views> memfn;
     memfn_views memfn;
@@ -273,4 +279,556 @@ unordered_multiset
 unordered_map
 unordered_multim
 */
+#if 0
+// Container that can iterate over its items
+    template <typename ITERABLE_T,typename = void> struct
+is_iterable : std::false_type {};
+// but when
+// having begin() and end() that each should return the container iterator type.
+    template <typename ITERABLE_T /*, specialized*/>struct
+is_iterable<ITERABLE_T,
+    std::void_t<    decltype( std::declval<ITERABLE_T>().begin() ),
+                    decltype( std::declval<ITERABLE_T>().end() )     >
+> : std::true_type {};
 <? $words=explode("|","a|b|c|d|e|g|h|i"); ?>
+
+                    class Enclosing
+                    {
+                            template<typename L_opt_copy>
+                            void
+                        to_work_input(istream is_, char _c, char _cfs)
+                        {
+                           // L_opt_copy(is_ , _c);
+                            for(;get_char_from_source()!='\n';) {
+                                if ( char_from_source!= '\\' ) {
+                                    L_opt_copy(is_ , _c);
+                                    continue;
+                                }
+                                //otherwise handle line continuation and double backquote
+                                switch( get_char_from_source() ) {
+                                  case '\n': // line continuation
+                                    L_opt_copy(is_ , '\\');
+                                    L_opt_copy(is_ , '\n');
+                                    break;
+                                  case '\\': // double backquote
+                                    L_opt_copy(is_ , '\\');
+                                    L_opt_copy(is_ , '\\');
+                                    break;
+                                  default:  // just a singleback quote
+                                    L_opt_copy(is_ , char_from_source);
+                                }
+                            } // for
+
+                        } // to_work_input
+                    };
+                      case '+':
+                        enabled_pragma_omp= true;
+                        break;
+                      case '-':
+                        enabled_pragma_omp= false;
+                        break;
+
+                switch (b) {
+                  case '{':
+                      psource->get(c);
+                        if ( c== '<' ) {
+                            work_input<< " PHP_BEGIN ";
+                        }
+                        else {
+                            work_input<< '{'<< c;
+                        }
+                      break;
+                  case '}':
+                      psource->get(c);
+                        if ( c== '>' ) {
+                            work_input<< " PHP_BEGIN } PHP_END";
+                        }
+                        else {
+                            work_input<< '{'<< c;
+                        }
+                      break;
+                  default:
+                      work_input<< '<'<< b;
+                }
+                break;
+
+
+                if      ( a=='<'&& b=='?' && c=='<' ) {
+                    // enter line marked PHP code region
+                    replace_with(" <?php PHP_MARKSRCLINE ");
+                }
+                else
+            ASSERT(col);  // col becomes internally zero, but when leaving we gurantee it is non-zero
+                  case '^': // -include directily to compilation, bypassing hash phase, multiple includes are separated by '^'
+#if 0
+                    unchanged_includes<<"#include "<< get_char_from_source();
+                    work_input<< sourceLineMarking();
+#else
+#pragma once
+//cpx-common-impl.cpp
+#ifndef CPX_COMMON_IMPL_CPP
+#  define CPX_COMMON_IMPL_CPP 1
+
+/* This file can be included to be compiled with the cpx script source code
+ * It is as if this is in front of your scripting code at file scope.
+ *
+ * This file is included in cpx-main-definition-signature.hpp
+ * ( Usage: #+common-impl.cpp )
+ */
+
+    namespace
+fs = std::filesystem
+;
+    namespace
+cpx {
+// #include ...
+// global functions and classes
+
+
+//_____________________________________________________________________________________________________________________
+    class
+ScopeDecoratorLines
+{
+    // Simple decoration helper, allows fast inspection of a cpx script executing well, without need to
+    // read from screen. Cpx reorts compilation failure in red. So if all is OK, you just look for geen
+    // or red. The cpx script output is in between the scope decorator lines.
+    // Usage:
+    // {
+    //    WITH_SCOPEDECORATORLINES;
+    //    ....
+    // }
+  public:
+        static void
+    Line(char const* _color=GREEN, char _ch='-', size_t _repeat=120)
+    {
+        std::cout<< _color<< string(_repeat,_ch)<< RESET<< std::endl;
+    }
+CPP_MARKSRCLINE
+  public:
+    ScopeDecoratorLines()    { Line(GREEN,'<'); }
+    ~ScopeDecoratorLines()   { Line(GREEN,'>'); }
+};
+
+#define WITH_SCOPE_DECORATOR_LINES cpx::ScopeDecoratorLines AUTO_ID
+
+//_____________________________________________________________________________________________________________________
+#ifdef CPX_VALIDATION_HASH
+
+#ifndef CPX_VALIDATION_HASH
+# error CPX_VALIDATION_HASH is not defined
+#endif
+    class
+ApplicationValidator
+{
+        enum class
+    validation_policy : int
+    // Could be FindIndex result, can't be set but behavior is kept deterministic.
+    {   notfound = 0
+    // For runtime testing ApplicationValidator.
+    ,   failtest
+    // Be more strict then normal, enforce correct behavior and warn for legal but unrecommended or corner cases.
+    ,   strict
+    // Disable it at runtime, there will be no validation checks.
+    ,   disabled
+    // Will not abort execution when CPX_VALIDATION_POLICY wasn't found in runtime environment, the message becomes a warning instead.
+    ,   relaxed
+    // Same as relaxed but will reveal more information to resolve the issue (without recompilation)
+    //  End users are deliberately not informed about this option.
+    ,   developer
+    // Standard behavior, cpx apps can not run without CPX_VALIDATION_HASH environment varaiable matching.
+    ,   normal
+    }
+    ;
+        char const*
+    m_policyNames[7]=
+    {static_cast<char const*>(nullptr) /* <-- set on each call*/
+        ,"failtest"
+        ,"strict"
+        ,"disabled"
+        ,"relaxed"
+        ,"developer"
+        ,"normal"
+    }
+    ;
+        validation_policy
+    m_myValidationPolicy = validation_policy::notfound;
+    ;
+        char const*
+    m_compiletimeValidationHash = nullptr
+    ;
+        char const*
+    m_runtimeValidationHash = nullptr
+    ;
+        void
+    cstr2validationPolicy(char const* _validation_policy)
+    {
+        int policyAsIndex=/*number of*/ITEMS_IN(m_policyNames);
+        m_policyNames[0]=_validation_policy;
+        FindIndex( &policyAsIndex , m_policyNames);
+        if ( !policyAsIndex ) {
+            INFO(HRED);
+            INFO("Error:",VARVAL(_validation_policy),
+                 "is not matching any policy and is ignored. "
+                 "Try one of: 'disabled','relaxed','normal','strict' or 'failtest'"
+                );
+            dumpDeveloperInfo();
+            INFO(NOCOLOR);
+            return;
+        }
+        m_myValidationPolicy = static_cast<validation_policy>(policyAsIndex);
+    }
+  public:
+    ApplicationValidator(char const *_compiletimeValidationHash) noexcept
+    : m_compiletimeValidationHash(_compiletimeValidationHash)
+    , m_runtimeValidationHash(getenv(ENV_CPX_VALIDATION_HASH))
+    {
+    }
+  protected:
+        void
+    dumpDeveloperInfo() const
+    {
+        INFO(VARVALS(m_policyNames[static_cast<int>(m_myValidationPolicy)],m_compiletimeValidationHash,m_runtimeValidationHash));
+        INFO(VARVALS(m_policyNames));
+    }
+
+        void
+    get_optional_runtime_policy()
+    {
+        if ( m_myValidationPolicy== validation_policy::disabled ) {
+            return;
+        }
+        char* cpx_validation_policy=getenv(ENV_CPX_VALIDATION_POLICY);
+
+        if ( cpx_validation_policy== NULL ) {
+            // I hope you did not misspell it (see ENV_CPX_VALIDATION_POLICY) because setting it is optional and the
+            // hardcoded will be used otherwise. There is a bit of rescue for developers if they recompile with
+            // m_myValidationPolicy== validation_policy::strict.
+            if ( m_myValidationPolicy== validation_policy::strict ) {
+                INFO(HYELLOW);
+                INFO("Warning:",VARVAL(ENV_CPX_VALIDATION_POLICY),"not retrieved from environment.");
+                vector<const char*> valid_policies;
+                for(const char* cstrl:m_policyNames){
+                    if (cstrl) {
+                        valid_policies.push_back(cstrl);
+                    }
+                }
+                INFO("         Posible values",VARVALS(valid_policies));
+                INFO(NOCOLOR);
+            }
+            return;
+        }
+        //else
+        // dont use the default but whats retrieved here.
+        cstr2validationPolicy( cpx_validation_policy);
+    }
+        bool
+    fields_are_set() const
+    {
+        bool returnValue = true;
+        if ( !m_compiletimeValidationHash ) {
+            INFO(HRED);
+            INFO("No usable compiletime validation hash, check ...ApplicationValidator instantiation.");
+            if ( m_myValidationPolicy==validation_policy::developer ) {
+                dumpDeveloperInfo();
+            }
+            INFO(NOCOLOR);
+            returnValue = false;
+        }
+        if ( !m_runtimeValidationHash ) {
+                auto
+            indication_color= (
+                m_myValidationPolicy== validation_policy::relaxed ||
+                m_myValidationPolicy== validation_policy::developer
+            ) ?HYELLOW :HRED
+            ;
+            INFO(indication_color);
+            INFO("Failed at runtime to retrieve enviromment variable:",VARVAL(ENV_CPX_VALIDATION_HASH),',');
+            INFO("  it usually is defined when the cpx app is started via cpx or as executable source (starting with #!...cpx)");
+            INFO("Resolve or set/export",ENV_CPX_VALIDATION_POLICY "=disabled (or relaxed)");
+            INFO("When building in release mode (for unrelated free binary executable), use cpx -C release ...");
+            INFO(" runtime validation checking is omitted from the source and no special environment variables are required.");
+            if ( m_myValidationPolicy==validation_policy::developer ) {
+                dumpDeveloperInfo();
+            }
+            returnValue = false;
+            INFO(NOCOLOR);
+        }
+        switch ( m_myValidationPolicy ) {
+            case validation_policy::failtest:
+                INFO(GREEN,"failtest: OK. cpx app was forced to fail the validation.",NOCOLOR);
+                if ( m_myValidationPolicy==validation_policy::developer ) {
+                    dumpDeveloperInfo();
+                }
+                return false;
+            case validation_policy::disabled:
+                return true;
+            case validation_policy::relaxed:
+            case validation_policy::developer:
+                if ( !m_runtimeValidationHash ) {
+                    return true;
+                }
+                [[fallthrough]];
+            case validation_policy::normal:
+                [[fallthrough]];
+            case validation_policy::strict:
+                [[fallthrough]];
+            default: // could be    _notfound
+                return returnValue;
+        }
+    }
+        int
+    isValidationHashMismatching() const // returns non zero int when mismatching
+    {
+        switch ( m_myValidationPolicy ) {
+            case validation_policy::failtest:
+                return !0;
+            case validation_policy::disabled:
+                    return 0;
+            case validation_policy::relaxed:
+                if ( !m_runtimeValidationHash ) {
+                    return 0;
+                }
+                [[fallthrough]];
+            case validation_policy::normal:
+                [[fallthrough]];
+            case validation_policy::strict:
+                [[fallthrough]];
+            default:// could be _null
+                return strcmp( m_compiletimeValidationHash, m_runtimeValidationHash);
+        }
+    }
+//        operator
+//    bool() const  // returns true if mathing otherwise false
+//    {
+//        return isValidationHashMismatching()? false: true;
+//    }
+
+public:
+        void
+    handle_validationHash_checking(ostream* pOs_=nullptr)
+    {
+        if ( m_myValidationPolicy == validation_policy::disabled ) {
+            return;
+        }
+
+        LOCAL_MODIFIED(INFO_STREAM_PTR);
+        INFO_TO(*pOs_);
+
+        get_optional_runtime_policy();
+        if ( m_myValidationPolicy == validation_policy::disabled ) {
+            return;
+        }
+        if ( !fields_are_set() ) {
+            tu::ThrowBreak("Missing application validation fields.");
+        }
+        //INFO(VARVALS(m_policyNames[static_cast<int>(m_myValidationPolicy)]));
+        if ( isValidationHashMismatching() ) {
+            if ( pOs_ ) {
+                char const* source = CPX_SOURCE_FILE;
+                INFO(HYELLOW);
+                INFO("No maching validation hashes!",VARVALS(source,m_compiletimeValidationHash,m_runtimeValidationHash));
+                INFO("CPX found a matching hash executable in its cache and asumed that it could use it, skipping compiling the source.");
+                INFO("The validation Hashes are there to ensure that only the correct binary that belonged to the source is executed.");
+                INFO("This excutable, does not match, it is from another source and therefor had to stop executing.");
+                if ( m_myValidationPolicy==validation_policy::developer ) {
+                    dumpDeveloperInfo();
+                }
+                if ( m_myValidationPolicy == validation_policy::relaxed ||
+                    m_myValidationPolicy == validation_policy::developer
+                ) {
+                    INFO(NOCOLOR);
+                    return;
+                }
+                INFO(HRED);
+            }
+            INFO("Execution is halted");
+            tu::ThrowBreak("Executable, has same binary hash, but the validation Hashes (to verify it is the correct executable) do not match.");
+        }
+        else {
+            // Show a litle green smile face character indication that the runtime validation succeeded.
+            std::cout<< HGREEN "\u263A" NOCOLOR <<std::endl;
+        }
+    }
+} //class ApplicationValidator
+;
+//_______________________________________________________________________________________
+
+ PHP_BEGIN
+    $CompileTimeValidationHash = getenv_or_die('CPX_VALIDATION_HASH',
+        'Php transformation terminated because the compiletime requirement was not met.');
+ PHP_END
+
+# define CPX_VALIDATE_WITH_SOURCE (cpx::ApplicationValidator("<?= $CompileTimeValidationHash ?>").handle_validationHash_checking(&cerr ))
+#else
+# define CPX_VALIDATE_WITH_SOURCE
+#endif // CPX_VALIDATION_HASH
+
+} // namespace cpx
+
+#endif // CPX_COMMON_IMPL_CPP
+
+
+            auto
+        pragma_omp=[&]()
+        {
+            // look ahead to enable/disable pragma omp
+            {
+                char plus_min_other;
+                psource->get(plus_min_other );
+                throwIfEndOfSourceFile();
+                switch (plus_min_other) {
+                  case '+':
+                    enabled_pragma_omp= true;
+                    ++col_nr;
+                    work_input.put(' ');
+                    get_char_from_source();
+                    break;
+
+                  case '-':
+                    enabled_pragma_omp= false;
+                    ++col_nr;
+                    work_input.put(' ');
+                    get_char_from_source();
+                    break;
+
+                  default:
+                    if (enabled_pragma_omp) {
+                        work_input<<" #pragma omp ";
+                    }
+                    work_input.put( plus_min_other);
+                    updateLineColNumbers();
+                }
+            }
+
+            if (enabled_pragma_omp) {
+                for(;char_from_source!='\n';get_char_from_source()) {
+                    switch (char_from_source) {
+                      case '\\':
+                        //handle next line continuation and double backquote
+                        switch ( get_char_from_source() ) {
+                          case '\n': // line continuation
+                            work_input.put('\\');
+                            work_input<<'\n';  // maintain the same number of lines
+                            break;
+                          case '\\': // double backquote
+                            work_input<<"\\\\";
+                            break;
+                          default:  // just a singleback quote
+                            work_input<<'\\'<< char_from_source;
+                        }
+                        break;
+                      default:
+                        work_input<< char_from_source;
+                    } // switch char_from_source
+                } // for
+            }
+            else {
+                // ignore all except newlines from next line continuations
+                while( get_line_from_source().back()=='\\' ){
+                    work_input.put('\n');
+                }
+            }
+            work_input<<'\n';  // maintain the same number of lines
+        };
+
+
+            auto
+        updateLineColNumbers=[&]()
+        {
+            if ( char_from_source== '\n' ) {
+                ++line_nr;
+                chars+=col_nr;
+                col_nr = 0;
+            }
+            else {
+                ++col_nr;
+            }
+        };
+                    // The inner_source_name should not have a directory path in fron of the name, that will
+                    //  lead to invalid name constructions.
+typedef   signed __int128  int128_t;
+typedef unsigned __int128 uint128_t;
+
+#if 1
+    class
+channel
+{
+  public:
+    template<typename Element_T>
+    class
+    namespace
+  public:
+        class
+    in
+    {
+            Queue_T&
+        m_queueReference
+        ;
+      public:
+        in(Queue_T& _queueReference_)
+        : m_queueReference(_queueReference_)
+        {}
+
+        operator Queue_T::element_type&& ()
+        {
+            /*
+        foo(channel::in<double> k)
+        {
+            Ka = k;
+        }
+
+        Queue qDoubles<double>;
+        foo(channel::in(qDoubles));
+
+            */
+            return m_queueReference.pop();
+        }
+    }
+#endif
+
+
+            size_t
+        available() const
+        {
+            return m_QueueRef.size();
+        }
+            size_t
+        unused() const
+        {
+            return m_QueueRef.unused();
+        }
+    constexpr  uint64_t
+Cstr2uint64(const char* cs, size_t len)
+    noexcept
+{
+    if ( !len ) return 0ull;
+    ASSERT(!cs[len]);
+
+        constexpr uint64_t
+    CHAR_FACTOR=97
+    ;
+        uint64_t
+    value_feedback_divider= 190172619316593311ull; // max_prime_below((2^64)/CHAR_FACTOR)
+    ;
+        uint64_t
+    out=len
+    ;
+
+ #define FIRST_CHARS_DONE ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*cs++)), *cs)
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+      if FIRST_CHARS_DONE return out;
+ #undef FIRST_CHARS_DONE
+
+    do {
+        uint64_t cycled= out/ value_feedback_divider; // saving upper bits by rotating, before the get lost in next multiplication.
+        ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
+    } while (!*cs);
+    return out;
+}

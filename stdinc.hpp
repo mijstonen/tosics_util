@@ -75,6 +75,8 @@
 #include <new>
 #include <typeindex>
 #include <stdexcept>
+#include <ranges>
+#include <concepts>
 
 // C++ containers
 #include <algorithm>
@@ -131,6 +133,7 @@
 #include <optional>
 #include <source_location>
 #include <coroutine>
+#include <numbers>
 // #include <stacktrace> C++23
 
 // boost adhock desires

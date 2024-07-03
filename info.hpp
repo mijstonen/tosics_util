@@ -474,12 +474,8 @@ void do_stream( NextLines const& _nextlines)
 {
     ObjOnLineCntRef()=0;
 
-    for( auto nextlines= _nextlines.count; nextlines>= 0; --nextlines ) {
-#   if 0
-        ( *(OstreamPtrRef()) )<< std::endl;    // flushes buffer
-#   else
+    for( auto nextlines= _nextlines.count; nextlines> 0; --nextlines ) {
         (*OstreamPtrRef())<<'\n';              // does (possibly) not flush buffer
-#   endif
     }//for
 }
     inline void
@@ -551,8 +547,6 @@ varvals(char const * _args_str, VA_ARGS_T const&... _va_args)
 //          IMPORTAND: Use with any other type of containers (aka associative...) is undefined.
 //
 
-typedef   signed __int128  int128_t;
-typedef unsigned __int128 uint128_t;
 
 // Do NOT call the following function directly, only to be used from STREAM2STR,
 // which creates a in place anominous ostringstream instance, hence it will not fail at runtime.
@@ -655,7 +649,7 @@ StringFrom128bitUInt // Simple class to manage the string memeory needed for the
 };
 
     inline std::ostream&
-operator << ( std::ostream& os_, uint128_t _u128 )
+operator << ( std::ostream& os_, const uint128_t& _u128 )
 {
     // Outputs the std::string part of the temorary StringFrom128bitUInt object
     os_<< StringFrom128bitUInt(_u128);
@@ -665,11 +659,11 @@ operator << ( std::ostream& os_, uint128_t _u128 )
 
 // Allows representing pairs and thereby also maps can be represented (as containers of pairs).
     template<
-        typename OS_T,
+        std_ostream OS_T,
         typename T1,
         typename T2
     >
-OS_T& operator << (OS_T& os_, std::pair<T1,T2> _pair)
+OS_T& operator << (OS_T& os_, const std::pair<T1,T2>& _pair)
 {
     return os_ << _pair.first<< PairItemsSeparation() <<_pair.second;
 }
@@ -701,10 +695,12 @@ OS_T& operator << (OS_T& os_, std::pair<T1,T2> _pair)
 
       return _GLIBCXX_MOVE(__f);
     }
-namespace { // anonimous namespace to only use what is defined here in this module / this file
+namespace
+{ // anonimous namespace to only use what is defined here in this module / this file
+
 // Implementation body. Some containers require a different template signature.
     template<
-        typename OS_T,
+        std_ostream OS_T,
         typename ITERATOR_T
     >
     OS_T&
@@ -726,7 +722,7 @@ _operator_shiftleft_body(OS_T& os_,  ITERATOR_T const& _begin, ITERATOR_T const&
 
 
     template<
-        typename OS_T,
+        std_ostream OS_T,
         typename CONTAINER_T
     >
     OS_T&
@@ -736,7 +732,7 @@ _operator_shiftleft_body(OS_T& os_,  CONTAINER_T const& _container )
 }
 
     template<
-        typename OS_T,
+        std_ostream OS_T,
         typename TU_T,
         size_t... I
     >
@@ -753,7 +749,7 @@ _print_tuple(OS_T& os_, TU_T const& _tup, std::index_sequence<I...>) // requires
 
 
     template<
-        typename OS_T,
+        std_ostream OS_T,
         template <typename...T> typename Container_T,
         typename... T
         ,typename std::enable_if_t<is_iterable_v<Container_T<T...> >, int> = 0
@@ -788,7 +784,7 @@ operator << (OS_T& os_,  std::array<T,N>const& _container   /* TODO: enable if i
  " T const (&_container)[N]" part.
  With upcomming binary streaming operators ( using < and > ), it is no issue.
 
-        Use string.c_str() to as arround. Resolbe by ecluding string.
+        Use string.c_str() to as argument. Resolve by exluding string.
  */
 
 
@@ -1089,7 +1085,7 @@ class SHA1 //StrongIdentifier /* SHA1CrcEnc64Id */  // customized for use in tos
         // I dont need to invent crc32. I grabbed proven code from the bussybox project.
         // But only what I need. Thats the little endian table and block algorithm.
         // Dont try to use range based loop or std::for_each here, its already tried before.
-        // It is in appropiate or causes boilerplate code.
+        // It is inappropiate or causes boilerplate code.
         for(auto pDataByte= static_cast<uint8_t const*>(_data), end= pDataByte+_len;
             pDataByte< end; ++pDataByte) {
             uint8_t lecTableItemIndex(static_cast<uint8_t>(m_heur) ^ *pDataByte);

@@ -37,10 +37,11 @@ void preserve_demo_1()
 
 
     try {
-        LOCAL_MODIFIED(a,d,pa,name);
+
+        PRESERVE_IN(LocalPreserver,  a,d,pa,name);
 #if PRESERVE_ADVANCED
         // Do something before restoring in case the body is left by some reason
-        LOCAL_MODIFIED_OBJECTS.
+        LocalPreserver.
             onBeforeRestore([&](tu::preserve_base* _context_)
                 {
                     INFO("my lambda 0",_context_->restore());
@@ -56,7 +57,7 @@ void preserve_demo_1()
 
                 });
 #endif
-      INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.restore()));
+      INFO(VARVAL(LocalPreserver.restore()));
       // Modify
       d=456;  a=2;  pa= &b;  name="Peter";
       INFO("modified:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
@@ -81,8 +82,8 @@ void preserve_demo_2(bool _fail)
 
 
     try {
-        LOCAL_MODIFIED(a,d,pa,name);
-        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed())); //shows false
+        PRESERVE_IN(LocalPreserver,a,d,pa,name);
+        INFO(VARVAL(LocalPreserver.changed())); //shows false
         INFO("intial:",VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
         d=456;
         a=2;
@@ -93,18 +94,18 @@ void preserve_demo_2(bool _fail)
         if ( _fail ) {
             tu::ThrowBreak("demonstrating fail");
         }
-        INFO(VARVAL(LOCAL_MODIFIED_OBJECTS.changed())); // shows true
+        INFO(VARVAL(LocalPreserver.changed())); // shows true
         // no exceptions thrown, pseudo commit, by disabling the restore mechanism
-        LOCAL_MODIFIED_OBJECTS.commit();
+        LocalPreserver.commit();
     }
     catch ( const char* excption_message )
     {
         INFO(VARVAL(excption_message),VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name), "stack unrolled");
     }
 
-    // LOCAL_MODIFIED_OBJECTS go out of scope
+    // LocalPreserver go out of scope
     // unless restore is set to false, the
-    // LOCAL_MODIFIED_OBJECTS destrucor
+    // LocalPreserver destrucor
     // cases restoring the objects
     INFO((_fail?"restored:":"committed:"),VARVAL(a),VARVAL(d),PTRVAL(pa),VARVAL(name));
 }

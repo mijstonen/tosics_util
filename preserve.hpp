@@ -212,12 +212,13 @@ template <typename... T>  /*class*/ preserve<T...> make_preserve(T&... /* refs*/
 /// @brief Make a named preserve instance and list the objects to be preserved after it, see preserve demos 0 in util_demos.cpp
 #define PRESERVE_IN(localPreserveInstanceName,...) preserve_INSTANCE(__VA_ARGS__) localPreserveInstanceName(__VA_ARGS__)
 
-/// @brief Retrieve the standard name of the preserve instance, see preserve demos 1 and 2 in util_demos.cpp
-#define LOCAL_MODIFIED_OBJECTS __anonymous__PreserveInstance__
-//#define LOCAL_MODIFIED_OBJECTS AUTO_ID
+/// @brief Retrieve the standard name of the preserve instance.
+/// @remark This creates unique Preserve instances each time LOCAL_MODIFIED is used.
+/// @remark So you cannot use it in application code (that is why it has a $$$ prefix.
+#define $$$LOCAL_MODIFIED_OBJECTS MAKE_UNIQUE(__anonymous__PreserveInstance__)
 
 /// @brief Users (by default) should use this macro, see preserve demos 1 and 2 in util_demos.cpp
 /// @remark Should only used once in a compund statement, alternatively use PRESERVE_IN
-#define LOCAL_MODIFIED(...) PRESERVE_IN(LOCAL_MODIFIED_OBJECTS,__VA_ARGS__)
+#define LOCAL_MODIFIED(...) PRESERVE_IN($$$LOCAL_MODIFIED_OBJECTS,__VA_ARGS__)
 
 #endif // PRESERVE_HPP_

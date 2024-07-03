@@ -338,7 +338,8 @@ namespace tosics::util {
 extern const void* SCX_MAP_FAILED;
 //} SCX
 
-
+using int128_t  = signed   __int128;
+using uint128_t = unsigned __int128;
 
 // MT20170417, Some forward declarations/definitions, see statereport.hpp
 //  defined state_t and stateLiteralArg_t are new and might not be used everywhere, using long and int should work well
@@ -966,6 +967,15 @@ struct cpuword<64>
     using unsigned_type = uint64_t;
 };
 
+template <>
+struct cpuword<128>
+: std::true_type
+{
+    using signed_type = int128_t;
+    using unsigned_type = uint128_t;
+};
+
+
 /* A RAII_Counter can be used to monitor recursions or detect entering and leaving scope.
  It has many purposes, from managing stacks, detect object method recursions, signalling of enterering and leaving scopes.
 */
@@ -1024,9 +1034,19 @@ Bits2str(char* charBfr_, decltype(sizeof(Integer_T)) bits, Integer_T _value)
     char const*
 Bits2str(decltype(sizeof(Integer_T)) const _bits, Integer_T _value)
 {
-    static char char_buffer[1+(sizeof(Integer_T)*8)];
+    thread_local static char char_buffer[1+(sizeof(Integer_T)*8)];
     return Bits2str(char_buffer , _bits, _value);
 }
+
+    template<typename Integer_T>
+    char const*
+Bits2str(Integer_T _value)
+{
+    const size_t bits=sizeof(Integer_T)*8;
+    thread_local static char char_buffer[bits+1];
+    return Bits2str(char_buffer , bits, _value);
+}
+
 #endif
 
 
@@ -1329,26 +1349,111 @@ if constexpr(std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>){
 #endif
 
 
+// Note: None of the directory class keep track of the current directory, only the directory
+//  during construction. You can change the current directory (anyway) without "directory" objects
+//   being aware. It requires manual action to keep the state of the the current directory.
 
+// base class for duplicated code.
+class DirectoryChanger
+{
+  public:
+    class changeDir_error
+    : public std::runtime_error
+    {
+      public:
+        changeDir_error(const std::string& _what)
+        : std::runtime_error(_what)
+        {}
+    };
 
+    static state_t changeDir(const std::filesystem::path& _otherDir);
+};
 
+// keeps track of directory at the instantiation
+class ScopedDirectory
+: public DirectoryChanger
+{
+    std::filesystem::path m_before;
 
+  public:
+    ScopedDirectory(const std::filesystem::path& _otherDir)
+    {
+        if ( _otherDir.empty() ) {
+            return;
+        }
+        m_before= std::filesystem::current_path();
+        changeDir( _otherDir);
+    }
 
+    ScopedDirectory(ScopedDirectory&& _from)
+    {
+        m_before.clear(); // avoid restoring to this directory when instance destructor (if _from) gets called
+        std::swap(_from.m_before,m_before);
+    }
 
+    ~ScopedDirectory()
+    {
+        changeDir(m_before);
+    }
 
+  private:
+    ScopedDirectory(const ScopedDirectory&) = delete;
+    ScopedDirectory& operator = (const ScopedDirectory&) = delete;
+};
 
+// more sophisticated directory stack, works like pushd and popd in bash
+class DirectoryStack
+: public DirectoryChanger, public std::vector<std::filesystem::path>
+{
+  public:
+        void
+    pushDir()
+    {
+        push_back( std::filesystem::current_path());
+    }
 
+    DirectoryStack()
+    {
+        pushDir(std::filesystem::current_path());
+    }
+        void
+    popDir()
+    {
+        changeDir(back());
+        pop_back();
+    }
 
+    void pushDir(const std::filesystem::path& _otherDir)
+    {
+        pushDir();
+        changeDir( _otherDir);
+    }
 
+    ~DirectoryStack()
+    {
+        if ( empty() ) {
+            // Everything was already popped, no more information left to act on.
+            return;
+        }
+        // Go back to the directory when this instance was constructed.
+        // We don't care managing the stack since it all distrcuted anyway.
+        changeDir(front());
+    }
+};
 
+// repeat: avoid the nastyness of std::views::iota .
+    inline auto
+repeat(unsigned long _offset, unsigned long _count)
+{
+    return std::views::iota(_offset,static_cast<unsigned long>(_count));
+}
 
-
-                    /*** INSERT NEW CODE ABOVE ***/
-
-
-} //namespace tosics::util
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//:repeats Do _count iterations, no need to give the range, it is mostly 0.._count-1 anyway.
+    inline auto
+repeat(unsigned long _count)
+{
+    return repeat(static_cast<unsigned long>(0),static_cast<unsigned long>(_count));
+}
 
 //:FAKE_USE
 /// compiler portable suppress "unused variable" warning
@@ -1363,6 +1468,224 @@ if constexpr(std::is_same_v<void,LAMBDA_RETURN_RESULT_TYPE(_RunF)>){
 
 #define EXPECT_true_FROM(_expression) EXPECT(_expression,true)
 #define EXPECT_false_FROM(_expression) EXPECT(_expression,false)
+
+
+//:Cstr2uint64    Convert 'at compile time' ASCII characters to a 64 bit integer.
+   inline constexpr uint64_t
+charIdCode(char c)
+{
+   auto index = static_cast<uint64_t>(static_cast<unsigned char>(c));
+   // index >= 32  when <32 is harmless but is undefined behavour and could cause collisions.
+   return index- 32ull;
+}
+
+    inline constexpr
+    uint64_t
+MostFrequntUsedEncode(unsigned char _c)
+{
+    // Optimized (in creating hashes that do not collide) for
+    // command words, they may contain _ - a..z A..Z 0..9
+    // other values (tokens) do not contribute to the hash.
+    // See whtablegen.php
+        constexpr uint64_t
+    COMMAND_ENCODING_TABLE[256]=
+    {   0, 255, 254, 253, 252, 251, 250, 249, 248,  96,  97, 247, 246,  97, 245, 244
+    , 243, 242, 241, 240, 239, 238, 237, 236, 235, 234, 233, 232, 231, 230, 229, 228
+    ,  95,  69,  89,  66,  64,  78,  75,  90,  82,  83,  73,  72,  92,  71,  67,  74
+    ,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  68,  91,  86,  88,  87,  70
+    ,  65,  29,  46,  39,  36,  27,  41,  43,  35,  31,  49,  48,  37,  40,  32,  30
+    ,  45,  50,  34,  33,  28,  38,  47,  42,  52,  44,  51,  84,  93,  85,  79,  63
+    ,  94,   4,  20,  13,  10,   1,  15,  17,   9,   5,  23,  22,  12,  14,   6,   3
+    ,  19,  24,   8,   7,   2,  11,  21,  16,  26,  18,  25,  80,  77,  81,  76,  99
+    , 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115
+    , 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131
+    , 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147
+    , 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163
+    , 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179
+    , 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195
+    , 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211
+    , 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227
+    };
+        auto
+    index=static_cast<unsigned>(_c)
+    ;
+    return COMMAND_ENCODING_TABLE[ index];
+}
+
+    inline constexpr
+    uint64_t
+MostFrequntUsedEncode(char _c)
+{
+    return MostFrequntUsedEncode(static_cast<unsigned char>(_c));
+}
+
+
+//:Cstr2uint64    Convert 'at compile time' ASCII characters to a 64 bit integer hash.
+//
+//  The aim for this function is to facilitate switch/case-s with string literals rather then numbers.
+//  This avoids ugly if else chains.
+//
+// Words that are shorter then 10 characters, nearly guaranteed unique. Intended for (DSL) language keywords or
+// ((long)commandline) options. All used numbers are prime numbers, they are used to cause maximum irregilarity
+// to to maximize chance on unique output from any input. You can use 1>>58 i.s.o devision amd 1<<7 for multiplication,
+// but with less uniquenes guarantee. For the best results, character codes should be in range 32..127. <32 is
+// undefined. Check s before when needed. The function stress tested on real world data and has no known collisions.
+// Due to the small loop, the loop should be completely executed from the code cache.
+    constexpr  uint64_t
+Cstr2uint64(const char* cs, size_t len)
+    noexcept
+{
+    if ( !len ) return 0ull;
+    ASSERT(!cs[len]);
+
+        constexpr uint64_t
+    CHAR_FACTOR=97
+    ;
+        uint64_t
+    value_feedback_divider= 190172619316593311ull; // max_prime_below((2^64)/CHAR_FACTOR)
+    ;
+        uint64_t
+    out=len
+    ;
+    if  (
+    #define TU_FIRST_CHARS ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*cs++)), *cs)
+            TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+     #undef FIRST_CHARS_DONE
+        ) {
+        do {
+           // cycled is saving upper bits by rotating, before the get lost in next multiplication.
+            uint64_t cycled= out/ value_feedback_divider;
+            ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
+        } while (*cs);
+    }
+
+    return out;
+}
+
+    constexpr uint64_t
+Cstr2uint64(char const* const _cs)
+    noexcept
+{
+    return Cstr2uint64( _cs, strlen(_cs));
+}
+    inline
+    uint64_t /*runtime*/
+Cstr2uint64(std::string const& _s)
+    noexcept
+{
+    return Cstr2uint64( _s.c_str());
+}
+
+// S_tring L_iteral H_ash
+//  switch ( Cstr2uint64(itemString) { case "firstcase"_slh: .... break; case "second"_slh: .....}
+//  switch ( Cstr2uint64(itemString) { case SLH(firstcase):.......break; case SLH(second):.....
+    constexpr uint64_t
+operator "" _slh(const char* _s,size_t _l)
+    noexcept
+{
+    return Cstr2uint64( _s, _l);
+}
+
+#define SLH(word) Cstr2uint64(#word)
+// consistant with S128LH
+#define S64LH(word) SLH(word)
+
+
+//:Cstr2uint64    Convert 'at compile time' ASCII characters to a 128 bit integer. Identical to Cstr2uint64 but more unique.
+// Words that are shorter then 10 characters, nearly guaranteed unique
+    constexpr uint128_t
+Cstr2uint128(const char* cs, size_t len)
+    noexcept
+{
+    if ( !len ) return 0ull;
+    ASSERT(!cs[len]);
+
+        constexpr uint64_t
+    CHAR_FACTOR=97
+    ;
+        uint128_t
+    //value_feedback_divider= 3508065638360190344983243375585239263ullll; // max_prime_below((2^128)/CHAR_FACTOR)
+    //direct 128 digits input needs to be split into upper and lower 64 bit values
+    value_feedback_divider=(uint128_t(190172619316593315ull)<<64) | uint128_t(11600529778312192223ull);
+    ;
+            uint128_t
+    out=len
+    ;
+    if  (
+    #define TU_FIRST_CHARS ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*cs++)), *cs)
+            TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+        //9 (in first 64 bit)
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+         && TU_FIRST_CHARS
+        //18 (in 128 bit)
+     #undef FIRST_CHARS_DONE
+        ) {
+        do {
+           // cycled is saving upper bits by rotating, before the get lost in next multiplication.
+            uint128_t cycled= out/ value_feedback_divider;
+            ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
+        } while (*cs);
+    }
+
+    return out;
+}
+
+    constexpr uint128_t
+Cstr2uint128(char const* const _cs)
+    noexcept
+{
+    return Cstr2uint128( _cs, strlen(_cs));
+}
+    inline
+    uint128_t /*runtime*/
+Cstr2uint128(std::string const& _s)
+    noexcept
+{
+    return Cstr2uint128( _s.c_str());
+}
+
+// S_tring 128 bit long L_iteral H_ash
+//  switch ( Cstr2uint128(itemString) { case "firstcase"_slh: .... break; case "second"_slh: .....}
+//  switch ( Cstr2uint128(itemString) { case SLH(firstcase):.......break; case SLH(second):.....
+    constexpr uint128_t
+operator "" _s128lh(const char* _s,size_t _l)
+    noexcept
+{
+    return Cstr2uint128( _s, _l);
+}
+#define S128LH(word) Cstr2uint128(#word)
+
+
+            /*** INSERT NEW CODE ABOVE ***/
+
+
+} //namespace tosics::util
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 /**********************************************************************************************************************/

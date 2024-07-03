@@ -115,6 +115,19 @@ _INLINE_VAR_ constexpr bool is_from_stream_readable_v= is_from_stream_readable<S
 template<typename S,typename T>
 _INLINE_VAR_ constexpr bool is_from_to_stream_readable_writable_v= is_from_to_stream_readable_writable<S,T>::value;
 
+
+// Custom type trait to detect std::ostream or its derivatives
+template<typename OS_T>
+struct is_std_ostream : std::is_base_of<std::ostream, OS_T> {};
+
+template<typename OS_T>
+_INLINE_VAR_ constexpr bool is_std_ostream_v= is_std_ostream<OS_T>::value;
+
+// Concept using the custom type trait
+template<typename OS_T>
+concept std_ostream = is_std_ostream<OS_T>::value;
+
+
 } // namespace cpx::util
 
 #endif // TYPE_TRAITS_

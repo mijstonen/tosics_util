@@ -7,7 +7,6 @@ namespace tosics::util {
 const void* SCX_MAP_FAILED=   ((const void*)-1);// == MAP_FAILED  but type is const void*
 #pragma GCC diagnostic pop
 
-
 /*
 _______________________________________________________________________________________________________________________
 delegated from STATEREPORT macro, see its description in utils.h
@@ -508,6 +507,35 @@ const bool Is_Little_Endian(Endian().is_Little());
     ConstReturn_OverloadTag
 extern With_ConstReturn
 ;
+
+    /*class static*/
+    state_t
+    DirectoryChanger::
+changeDir(const fs::path& _otherDir)
+{
+    if ( _otherDir.empty() ) {
+        return State(1);        // Sometimes the effect of ChangeDir is negated by clearing the path before.
+    }
+    try {
+        fs::current_path(_otherDir);
+    }
+    catch( fs::filesystem_error& e )
+    {
+            std::string
+        new_message=
+            STREAM2STR(
+                "DirectoryChanger::changeDir_error: cannot set current path: in'"
+                << fs::current_path()<<"' to '"<< _otherDir
+                <<"'. No such file or directory."
+            );
+
+        throw  changeDir_error( new_message);
+        /////////////////
+        return State(-1);
+    }
+    return State(0);
+}
+
 
 
 }// namespace tosics::util
