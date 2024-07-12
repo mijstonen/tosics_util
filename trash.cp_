@@ -832,3 +832,44 @@ Cstr2uint64(const char* cs, size_t len)
     } while (!*cs);
     return out;
 }
+    constexpr  uint64_t
+Cstr2uint64(const char* cs, size_t len)
+    noexcept
+{
+    if ( !len ) return 0ull;
+    ASSERT(!cs[len]);
+
+        constexpr uint64_t
+    CHAR_FACTOR=97
+    ;
+        uint64_t
+    value_feedback_divider= 190172619316593311ull; // max_prime_below((2^64)/CHAR_FACTOR)
+    ;
+        uint64_t
+    out=len
+    ;
+        char*
+    first_chars[10]
+    ;
+        auto
+    sizeof_first_chars=sizeof first_chars
+    ;
+        const char*
+    itr=strncpy(first_chars , cs, sizeof_first_chars- 1);
+    ;
+    first_chars[ sizeof_first_chars]= '\0';
+    while ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*itr++)), *itr);
+    if ( ( itr- first_chars )< sizeof_first_chars ) ) {
+        return out;
+    }
+    // otherwise *itr==0 -> itr-first_chars==sizeof_first_chars
+    cs+= sizeof_first_chars;
+    do {
+        // cycled is saving upper bits by rotating, before the get lost in next multiplication.
+        uint64_t cycled= out/ value_feedback_divider;
+        ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
+    } while (*cs);
+
+    return out;
+}
+
