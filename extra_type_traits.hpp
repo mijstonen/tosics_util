@@ -3,6 +3,8 @@
 #ifndef TYPE_TRAITS_
 #  define TYPE_TRAITS_ 1
 
+#include "stdinc.hpp"
+
 namespace tosics::util
 {
 

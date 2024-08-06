@@ -18,7 +18,7 @@ INCLUDE_INPUT=$1
 #STD_OF_CPP="c++1z"  # see man gcc , search: -std   near line 817
 #STD_OF_CPP="gnu++17"
 #STD_OF_CPP="gnu++2a"  # experimental c++20
-STD_OF_CPP=gnu++23
+STD_OF_CPP=gnu++26
 
 final_precompiled_out_path=$(readlink --canonicalize "$PRECOMPILED_OUT_PATH")
 
@@ -38,7 +38,7 @@ then
     # cp "$INCLUDE_INPUT" "$INCLUDE_INPUT_PATH"  # only used if precompiled header can be used
 
     PCCMD="g++ -march=native -pipe -DDEBUG -ggdb -H -O0 \
-        -std=$STD_OF_CPP -fconcepts -fopenmp -rdynamic -x c++-header $INCLUDE_INPUT -o $PRECOMPILED_OUT_PATH 2>&1 | tee $PRECOLPILE_LOG"
+        -std=$STD_OF_CPP -fconcepts -fcoroutines -fopenmp -rdynamic -x c++-header $INCLUDE_INPUT -o $PRECOMPILED_OUT_PATH 2>&1 | tee $PRECOLPILE_LOG"
     echo "PCCMD = '$PCCMD'"
     eval "$PCCMD" | awk '/Multiple include guards may be useful for:/ {nextfile} {print}'
 else

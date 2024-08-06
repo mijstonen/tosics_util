@@ -1,4 +1,4 @@
-
+#!/bin/sh
 # rm stdinc.hpp.gch   # optional / for testing
 
 # files and directories / depended settings

@@ -3,11 +3,11 @@
 ////////////////////
 #define BUILD_ALL 2
 // // BUILD_ALL comment. BUILD_ALL must be at the first line so it can be changed very easily by a automated tool.
-// Touch , to force a rebuild all without make clean and also force ccache not to shortcut any way, make changes to
+// Touch , to force a rebuild all without make clean, make changes to
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,
 // as long it changes, increase it by one each time you request a complete rebuild makes sense.
 
-// #include <stdinc.hpp> has to be precompiled and passed the compiler with -include
+#include "stdinc.hpp"
 
 #ifndef UTILS_HPP_
 #define UTILS_HPP_ 1
@@ -74,6 +74,15 @@
 // The lambda execution resturned result type, without needing to instantiate a functor
 // see also its use in RunAndFinally
 #define LAMBDA_RETURN_RESULT_TYPE(_LambdaT) decltype( std::declval<_LambdaT>().operator()())
+
+//:ASSUME_USED
+/// gnu custom attribute
+#if defined(__GNUC__) || defined(__clang__)
+#define ASSUME_USED [[gnu::used]]
+#else
+#define ASSUME_USED
+#endif
+
 
 namespace tosics::util {
 //:Items_in
@@ -582,7 +591,7 @@ void DumpBacktraceInFileStream(int backtrace_output_filehandle_ = STDERR_FILENO)
 //@{ to be moved to separate unit
 //:ThrowBreak:// Use it i.s.o. naked throw and put breakpoints in it and see full backtrace in debugger
     template <typename EXCEPTION_T>
-    [[ noreturn ]] void
+    /* [[ noreturn ]] */ void
 ThrowBreak(const EXCEPTION_T& _exception, eBreakCategory _break_category = eBC_default)
 {
     const std::set<eBreakCategory> NoBacktraceCategory{ eBC_handled };
@@ -602,19 +611,16 @@ ThrowBreak(const EXCEPTION_T& _exception, eBreakCategory _break_category = eBC_d
             throwBreak_EBC(eBC_assertion_failed);        //
             throwBreak_EBC(eBC_handled);                 //
             throwBreak_EBC(eBC_fatal);                   //
-        }
+        } //switch
 #undef throwBreak_EBC
+
         std::cerr<< std::endl<< HRED << __PRETTY_FUNCTION__
                  << " break_category_name: '"<< break_category_name
-                 << "'    dumping stacktrace!"
+                 << "'    dumping stacktrace!\n"
+                 << std::stacktrace::current()
                  << NOCOLOR<<std::endl
                  ;
-// TODO: demangeled backtrace
-//HINTS
-//https://linux.die.net/man/3/backtrace_symbols_fd
-//http://www.boost.org/doc/libs/master/libs/core/doc/html/core/demangle.html#core.demangle.header_boost_core_demangle_hpp
-//http://www.boost.org/doc/libs/1_65_0/doc/html/stacktrace.html
-        DumpBacktraceInFileStream(STDERR_FILENO);
+      // DumpBacktraceInFileStream(STDERR_FILENO);
     } // find(_break_category)
     throw _exception;
 }
@@ -879,10 +885,8 @@ Append_joined(std::string * txt_, CONTAINER_T const& _strs,char _sepChr)
 }
 //@} to be moved to separate unit
 
-
-    template<typename... _P>
-    constexpr
-    inline void
+    template<typename... _P> ASSUME_USED constexpr inline
+    void
 Fake_use(_P... /*_args*/ )
 {
     //(void)(_args),...;
@@ -1441,11 +1445,11 @@ class DirectoryStack
     }
 };
 
-// repeat: avoid the nastyness of std::views::iota .
+// repeat: avoid the nastyness of std::ranges::iota_view .
     inline auto
 repeat(unsigned long _offset, unsigned long _count)
 {
-    return std::views::iota(_offset,static_cast<unsigned long>(_count));
+    return std::ranges::iota_view(_offset,static_cast<unsigned long>(_count));
 }
 
 //:repeats Do _count iterations, no need to give the range, it is mostly 0.._count-1 anyway.
@@ -1480,14 +1484,14 @@ charIdCode(char c)
 }
 
     inline constexpr
-    uint64_t
-MostFrequntUsedEncode(unsigned char _c)
+    uint8_t
+MostFrequntUsedEncode(uint8_t _c)
 {
     // Optimized (in creating hashes that do not collide) for
     // command words, they may contain _ - a..z A..Z 0..9
     // other values (tokens) do not contribute to the hash.
     // See whtablegen.php
-        constexpr uint64_t
+        constexpr uint8_t
     COMMAND_ENCODING_TABLE[256]=
     {   0, 255, 254, 253, 252, 251, 250, 249, 248,  96,  97, 247, 246,  97, 245, 244
     , 243, 242, 241, 240, 239, 238, 237, 236, 235, 234, 233, 232, 231, 230, 229, 228
@@ -1507,17 +1511,17 @@ MostFrequntUsedEncode(unsigned char _c)
     , 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227
     };
         auto
-    index=static_cast<unsigned>(_c)
+    index=_c
     ;
     return COMMAND_ENCODING_TABLE[ index];
 }
-
     inline constexpr
-    uint64_t
+    uint8_t
 MostFrequntUsedEncode(char _c)
 {
-    return MostFrequntUsedEncode(static_cast<unsigned char>(_c));
+    return MostFrequntUsedEncode(static_cast<uint8_t>(_c));
 }
+
 
 
 //:Cstr2uint64    Convert 'at compile time' ASCII characters to a 64 bit integer hash.
@@ -1531,7 +1535,7 @@ MostFrequntUsedEncode(char _c)
 // but with less uniquenes guarantee. For the best results, character codes should be in range 32..127. <32 is
 // undefined. Check s before when needed. The function stress tested on real world data and has no known collisions.
 // Due to the small loop, the loop should be completely executed from the code cache.
-    constexpr  uint64_t
+    inline constexpr  uint64_t
 Cstr2uint64(const char* cs, size_t len)
     noexcept
 {
@@ -1561,7 +1565,7 @@ Cstr2uint64(const char* cs, size_t len)
      #undef FIRST_CHARS_DONE
         ) {
         do {
-           // cycled is saving upper bits by rotating, before the get lost in next multiplication.
+           // cycled is saving upper bits by rotating, before they get lost in next multiplication.
             uint64_t cycled= out/ value_feedback_divider;
             ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
         } while (*cs);
@@ -1570,7 +1574,39 @@ Cstr2uint64(const char* cs, size_t len)
     return out;
 }
 
+    inline constexpr  uint64_t
+Cstr2uint64v(const char* cs, size_t len)
+    noexcept
+{
+    ASSERT(!cs[len]);
+    if ( !len ) return 0ull;
+
     constexpr uint64_t
+    CHAR_FACTOR=97
+    ;
+    constexpr uint64_t
+    value_feedback_divider= 190172619316593311ull; // max_prime_below((2^64)/CHAR_FACTOR)
+    ;
+    uint64_t
+    out=len
+    ;
+
+    for (   const char* cs_end=cs+9;
+            ( *cs )&& ( cs< cs_end );
+            ( out*=CHAR_FACTOR )+= MostFrequntUsedEncode(*cs++)
+        );
+
+    while ( *cs ) {
+        // cycled is saving upper bits  by rotating, before they get lost in next multiplication.
+        uint64_t cycled= out/ value_feedback_divider;
+        ( ( out*= CHAR_FACTOR )+= cycled )+= MostFrequntUsedEncode( *cs++ );
+    }
+
+    return out;
+}
+
+
+    inline constexpr uint64_t
 Cstr2uint64(char const* const _cs)
     noexcept
 {
@@ -1581,13 +1617,13 @@ Cstr2uint64(char const* const _cs)
 Cstr2uint64(std::string const& _s)
     noexcept
 {
-    return Cstr2uint64( _s.c_str());
+    return Cstr2uint64( _s.c_str(),_s.size());
 }
 
 // S_tring L_iteral H_ash
 //  switch ( Cstr2uint64(itemString) { case "firstcase"_slh: .... break; case "second"_slh: .....}
 //  switch ( Cstr2uint64(itemString) { case SLH(firstcase):.......break; case SLH(second):.....
-    constexpr uint64_t
+    inline constexpr uint64_t
 operator "" _slh(const char* _s,size_t _l)
     noexcept
 {
@@ -1598,10 +1634,11 @@ operator "" _slh(const char* _s,size_t _l)
 // consistant with S128LH
 #define S64LH(word) SLH(word)
 
+//_____________________________________________________________________________________________________________________
 
-//:Cstr2uint64    Convert 'at compile time' ASCII characters to a 128 bit integer. Identical to Cstr2uint64 but more unique.
+//:Cstr2uint128    Convert 'at compile time' ASCII characters to a 128 bit integer. Identical to Cstr2uint64 but more unique.
 // Words that are shorter then 10 characters, nearly guaranteed unique
-    constexpr uint128_t
+    inline constexpr uint128_t
 Cstr2uint128(const char* cs, size_t len)
     noexcept
 {
@@ -1620,7 +1657,7 @@ Cstr2uint128(const char* cs, size_t len)
     out=len
     ;
     if  (
-    #define TU_FIRST_CHARS ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*cs++)), *cs)
+        #define TU_FIRST_CHARS ( ((out*=CHAR_FACTOR)+=MostFrequntUsedEncode(*cs++)), *cs)
             TU_FIRST_CHARS
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
@@ -1630,7 +1667,7 @@ Cstr2uint128(const char* cs, size_t len)
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
-        //9 (in first 64 bit)
+        //first 9 (in first 64 bit)
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
@@ -1640,8 +1677,8 @@ Cstr2uint128(const char* cs, size_t len)
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
          && TU_FIRST_CHARS
-        //18 (in 128 bit)
-     #undef FIRST_CHARS_DONE
+        //first 18 (in 128 bit)
+        #undef FIRST_CHARS_DONE
         ) {
         do {
            // cycled is saving upper bits by rotating, before the get lost in next multiplication.
@@ -1653,24 +1690,23 @@ Cstr2uint128(const char* cs, size_t len)
     return out;
 }
 
-    constexpr uint128_t
+    inline constexpr uint128_t
 Cstr2uint128(char const* const _cs)
     noexcept
 {
     return Cstr2uint128( _cs, strlen(_cs));
 }
-    inline
-    uint128_t /*runtime*/
+    inline uint128_t /*runtime*/
 Cstr2uint128(std::string const& _s)
     noexcept
 {
-    return Cstr2uint128( _s.c_str());
+    return Cstr2uint128( _s.c_str(),_s.size());
 }
 
 // S_tring 128 bit long L_iteral H_ash
 //  switch ( Cstr2uint128(itemString) { case "firstcase"_slh: .... break; case "second"_slh: .....}
 //  switch ( Cstr2uint128(itemString) { case SLH(firstcase):.......break; case SLH(second):.....
-    constexpr uint128_t
+    inline constexpr uint128_t
 operator "" _s128lh(const char* _s,size_t _l)
     noexcept
 {
@@ -1678,7 +1714,104 @@ operator "" _s128lh(const char* _s,size_t _l)
 }
 #define S128LH(word) Cstr2uint128(#word)
 
+//_____________________________________________________________________________________________________________________
 
+    inline constexpr
+    uint8_t
+MostFrequntUsedDecode(uint8_t _encoded)
+{
+        constexpr
+        uint8_t
+    COMMAND_DECODING_TABLE[256]=
+    {   0, 101, 116, 111,  97, 105, 110, 115, 114, 104, 100, 117, 108,  99, 109, 102
+    , 119, 103, 121, 112,  98, 118, 107, 106, 113, 122, 120,  69,  84,  65,  79,  73
+    ,  78,  83,  82,  72,  68,  76,  85,  67,  77,  70,  87,  71,  89,  80,  66,  86
+    ,  75,  74,  81,  90,  88,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  95
+    ,  36,  64,  35,  46,  58,  33,  63,  45,  43,  42,  47,  38, 126, 124,  37,  94
+    , 123, 125,  40,  41,  91,  93,  60,  62,  61,  34,  39,  59,  44,  92,  96,  32
+    ,   9,  13,   0, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139
+    , 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155
+    , 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171
+    , 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187
+    , 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203
+    , 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219
+    , 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235
+    , 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251
+    , 252, 253, 254, 255,  31,  30,  29,  28,  27,  26,  25,  24,  23,  22,  21,  20
+    ,  19,  18,  17,  16,  15,  14,  12,  11,   8,   7,   6,   5,   4,   3,   2,   1
+    };
+
+    auto index=  _encoded;
+    auto decoded=  COMMAND_DECODING_TABLE[ index];
+    return decoded;
+}
+    inline constexpr
+    uint8_t
+MostFrequntUsedDecode(char _c)
+{
+    return MostFrequntUsedDecode(static_cast<uint8_t>(_c));
+}
+    template<typename HASH_T>
+    inline constexpr
+    state_t  // Investigate returned state using STATEREPORT
+hashToSmallCstr( uint8_t* cstr_, HASH_T hash)
+{
+    if ( !cstr_ ) {
+        return state_t{-1}; // oops: nullptr, avoid writing to it, caller needs to reserve at least len+1 characters pointed by cstr_. uint8_t[20] is sufficient.
+    }
+    *cstr_='\0';
+    if ( !hash ) {
+        return state_t{0};  // hash of an empty string
+    }
+    // Determine length of the string to extract and cache the divisions
+        size_t
+    len=0
+    ;
+        constexpr size_t
+    MaxLen= ( sizeof(HASH_T)== sizeof(uint64_t) )? 9: 18;
+    ;
+        HASH_T
+    cache[MaxLen+2]  // avoid doing divisions twice
+    ;
+    while( hash!= len ) {
+        cache[ len]= hash;
+        hash/= 97;
+        if ( !hash ) {
+            return state_t{-2};  // No matching hash with len found, possibly earlier fragments are cycled and the value is folded, decoding not possible.
+        }
+        ++len;
+
+        if (len> MaxLen) {
+            return state_t{-3};  // Hash exceeds the maximum length, earlier fragments are cycled and the value is folded, decoding not possible.
+        }
+    }
+    // Cache cleaning is not strictly neccesary but it contributes to application robustness by clearing uninitialized values.
+    cache[ len]= hash;
+        size_t
+    ci=len
+    ;
+    while ( ++ci< ( MaxLen+ 2 ) ) {
+        cache[ci]=static_cast<HASH_T>(0);
+    }
+    // Extract the string characters from end of the string to the beginning of the string
+    ci=0;
+        HASH_T
+    last
+    ;
+    cstr_[ len]='\0';
+    do {
+        --len;
+        last= cache[ ci++]% 97;
+        if ( !last ) {
+            return state_t{-4}; // too early zero termination
+        }
+        auto encoded= static_cast<uint8_t>(last);
+        auto decoded= MostFrequntUsedDecode( encoded);
+        cstr_[ len]= decoded;
+    } while (len);
+
+    return state_t{0}; // Success
+}
             /*** INSERT NEW CODE ABOVE ***/
 
 

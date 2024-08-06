@@ -449,7 +449,7 @@ custom_quote( Value_T const& _value)
         hx1= 0;
     }
     ss << CustomQuote();
-    return /**/std::move(/**/ ss.str() /**/)/**/;
+    return /*std::move(*/ ss.str() /*)*/;
 }
 //@}
 //______________________________________________________________________________
@@ -1059,11 +1059,11 @@ class SHA1 //StrongIdentifier /* SHA1CrcEnc64Id */  // customized for use in tos
 
         ASSERT( pUnc64<= ( m_outputbuffer + ( sizeof m_outputbuffer )- 3 ) );
         ASSERT( has3bitsCnt < MODULO_VALUE && otherCnt < MODULO_VALUE );
-
+#if DEBUG
         uint64_t encodeCnt=has3bitsCnt+is62cnt+is63cnt+otherCnt;
          ASSERT( encodeCnt==34 ); // must excactly match number of calls to encode6BitsToChar()
          ASSERT( m_outputbuffer + 3 + encodeCnt == pUnc64 );
-
+#endif
         // Store first 3 characters ah hash of hash,
         // if 1st 3 are same (nearly 200e3 possibilities - but not without collissions),
         // it is likely that rest is the same. So the first (3 or more) characters could

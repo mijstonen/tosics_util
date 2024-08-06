@@ -22,16 +22,18 @@ prj_dir_name=$(basename $(pwd))
 build_in_other_dir()
 {
   cd "../build/$prj_dir_name"
-  VERBOSE=1 ninja -v -j 8  $1
+  VERBOSE=1 ninja -v -j 2  $@
   ls -lrth --full-time --color=always
   cd -
 }
 
 mkdir -p ../build/$prj_dir_name/logs/
 BUILDLOG="../build/$prj_dir_name/logs/build-$(timestamp).log"
-build_in_other_dir  2>&1 | tee $BUILDLOG
-less -R $BUILDLOG
-ls -lrth ../build/$prj_dir_name/logs/build*.log | tail -3
+build_in_other_dir $@ 2>&1
+
+#| tee $BUILDLOG
+#less -R $BUILDLOG
+#ls -lrth ../build/$prj_dir_name/logs/build*.log | tail -3
 
 
 

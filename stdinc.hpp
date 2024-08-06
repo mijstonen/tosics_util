@@ -134,7 +134,7 @@
 #include <source_location>
 #include <coroutine>
 #include <numbers>
-// #include <stacktrace> C++23
+#include <stacktrace>
 
 // boost adhock desires
 #include <boost/current_function.hpp>

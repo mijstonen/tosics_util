@@ -2,7 +2,9 @@
 //statereport.hpp
 #ifndef STATEREPORT_H_
 #  define STATEREPORT_H_ 1
-
+/*
+________________________________________________________________________________________________________________________
+*/
 #include "util.hpp"
 #include "info.hpp"
 #include "preserve.hpp"
@@ -121,8 +123,8 @@ namespace tosics::util {
         break;
     case -6:
         // -6 was also reported through STATEREPORT but it does not hinder you to handle it anyway
-
-    default:  // not 0, 1, 2, -6
+        break
+    default:  // not one of: 0, 1, 2, -6
         // give up, state report has already given the standard error/notification message
         return -2;  // pass a error state of this function to the caller
   }
@@ -133,20 +135,20 @@ namespace tosics::util {
   \endcode
 
   Do also look at the references to understand how it is used.
- STATEREPORT is for methods and functions that return 0 on success, a <0 value to report a error
+ STATEREPORT is for methods and functions that return 0 on success, a < 0 value to report a error
  and >0 to notify another condition but that is not a (fatal) error, just a case that COULD be handled
  the caller. STATEREPORT is initiated to standarize the way these states are reported to the user
 
  Note that STATEREPORT is intended for development and exceptional situations that are not as severe
  as when excption handling is required. You may still decide to throw a exception upon the returned (error) state.
 
- The logic of return codes does NOT sequentially (in source) enummerate error values (r<0) or notifications (r>0)
+ The logic of return codes does NOT sequentially (in source) enummerate error values ( r < 0) or notifications (r > 0)
  the policy shall be incremental enummeration and leave existing return values as they are. The rationalle
  is that the callers may check the return value and determine actions on that. The meaning of the numbering (besides
- <0 | 0 | >0 ) is local and helps to pin point the exact location of the condition that triggered it.
+ < 0 | 0 | > 0 ) is local and helps to pin point the exact location of the condition that triggered it.
 
  STATEREPORT is intended to have the following impact on the software implementations:
- - Consequent return values, <0 = error state, 0 = success state, >=notification that is (optionally) to be handled
+ - Consequent return values, < 0 = error state, 0 = success state, >=notification that is (optionally) to be handled
  - Consequent data output via the parameter list of a function instead of using return
    eg. int foo(out_type* out_,in_type const& _in)
  - Decomposition of complex functions (or methods) into smaller modular ones that communicate control flow by states.
@@ -261,7 +263,7 @@ namespace tosics::util {
 
 //:__stateReport
 #  if SR_ENABLE
-#    if SR_DEBUG
+// All available in debug and release modes #    if SR_DEBUG
 /**
  @brief enabled:debug: implements the operations for macro STATEREPORT
 
@@ -283,12 +285,8 @@ __stateReport( state_t _return_state_of_call_, char const* _callee, char const* 
              );
 
 
-
-
-
-
 /**
- @brief enabled:debug: implements the operations for macro STATEREPORT
+ @brief enabled:debug: implements the operations for macro STATEREPORT, no _exclusionsVector, but with _what
  @sa STATEREPORT
  @param _return_state_of_call_ return value (state) of _caller
  @param _callee the method or routine that is called
@@ -310,13 +308,11 @@ __stateReport( state_t _return_state_of_call_, char const* _callee, char const* 
 
 
 
-#      define STATEREPORT(_CALL,...) \
-          tosics::util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
 
 
 
 
-#    else  // no SR_DEBUG
+// All available in debug and release modes #    else  // no SR_DEBUG
 
 /**
  @brief enabled: NO debug: implements the operations for macro STATEREPORT
@@ -336,12 +332,8 @@ __stateReport( state_t _return_state_of_call_, char const* _callee, char const* 
              , std::vector<state_t> const& _exclusionsVector=SR_ZERO_IS_SUCCESS, int _what=3
              );
 
-
-
-
-
 /**
- @brief enabled: NO debug: implements the operations for macro STATEREPORT
+ @brief enabled: NO debug: implements the operations for macro STATEREPORT, no _exclusionsVector, but with _what
  @param _return_state_of_call_ return value of _caller
  @param _callee the method or routine that is called
  @param _what  0, 1, 2  or  3  (default=3 meaning report everything) or 'q', 'n', 'e', 'a' or 'Q', 'N', 'E' or 'A'
@@ -356,15 +348,15 @@ __stateReport(  state_t _return_state_of_call_, char const* _callee, char const*
 
 
 
+// All available in debug and release modes #    endif // SR_DEBUG
 
-
-#      define STATEREPORT(_CALL,...) tosics::util::__stateReport(_CALL, #_CALL, __PRETTY_FUNCTION__,##__VA_ARGS__)
-#    endif // SR_DEBUG
-
-
-
-
-
+#    if SR_DEBUG
+#      define STATEREPORT(_CALL,...) \
+          tosics::util::__stateReport(_CALL, #_CALL, __FILE__, __LINE__, __PRETTY_FUNCTION__,##__VA_ARGS__)
+#    else // without revealing __FILE__ and __LINE__
+#      define STATEREPORT(_CALL,...) \
+          tosics::util::__stateReport(_CALL, #_CALL,                     __PRETTY_FUNCTION__,##__VA_ARGS__)
+#    endif
 
 /** @brief Set, get, or exchange the stream pointer to the stream that is used during STATEREPORT
  *  @param _stateReport_StreamPtr New stream pointer (aka &std::cout or &my_file_stream)

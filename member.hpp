@@ -3,7 +3,7 @@
 #ifndef MEMBER_HPP
 #  define MEMBER_HPP 1
 
-
+#include "stdinc.hpp"
 
 #ifndef __cpp_lib_byte  // compiler or library depended
 # define NEEDS_BYTE_DEFINITION 1

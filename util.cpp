@@ -28,15 +28,23 @@ stateReport_exchange_StreamPtr(std::ostream* _stateReport_StreamPtr)
 }
 #endif
 
-# if SR_DEBUG
+
+/*
+ Both __stateReport versions (Debug and Release, which does not reveal source file and line number) are build in
+ release mode as well in debug mode. This is because we do not want users of the library need to depend
+ on succeeding build on which version of the util library is in use.
+
+ For example, if the client would be build in debug mode but the util library in release mode, and the debug mode
+ __stateReport variant would not be present, then we get a linking error, hence the client build would fail.
+ The same could happen if the util library is build in debug mode but the client is build in release mode.
+
+ The correct STATEREPORT macro selection by SR_DEBUG is made in statereport.hpp
+*/
+
+
     state_t
 __stateReport(  state_t _return_state_of_call_, char const* _callee, char const* _file, unsigned _line, \
                 char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
-# else // release hides location information
-    state_t
-__stateReport(  state_t _return_state_of_call_, char const* _callee, \
-                char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
-# endif // SR_DEBUG
 {
     static char const*const kind[]{ ""
                       , "ERROR"
@@ -96,21 +104,35 @@ __stateReport(  state_t _return_state_of_call_, char const* _callee, \
         char const* MessageColor= ( mode==2 )?HYELLOW :HRED;
         INFO(MessageColor);     // combined 1. MessageColor and 2. a newline before writing
         std::string state_msg="State("+std::to_string(_return_state_of_call_)+")";
-#define returning _return_state_of_call_
-# if SR_DEBUG
-        INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(state_msg),VARVAL(_callee),VARVAL(_file), \
-                VARVAL(_line),VARVAL(_caller));
-# else
-        INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(returning),VARVAL(state_msg),VARVAL(_callee),VARVAL(_caller));
-# endif
+        if ( !_line || !( *_file ) ) {
+            INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(_return_state_of_call_),VARVAL(state_msg),VARVAL(_callee),
+                 VARVAL(_caller));
+        }
+        else {
+            INFO("STATEREPORT>>>Unhandled ",kind[mode],VARVAL(_return_state_of_call_),VARVAL(state_msg),VARVAL(_callee),
+                 VARVAL(_file),VARVAL(_line),VARVAL(_caller));
+        }
         INFO(NOCOLOR);    // combined 1. Clear color changes and 2. a newline before writing
         INFO_STREAM_PTR->flush();
-#undef returning
     }
     LB_REPORT_SKIPPED:
     return _return_state_of_call_;
 }//__stateReport()
 #endif // SR_ENABLE
+
+
+// Release version, does not reveal sourcefile and source line.
+    state_t
+__stateReport(  state_t _return_state_of_call_, char const* _callee,
+                char const* _caller, std::vector<state_t> const& _exclusionsVector, int _what)
+{
+    return __stateReport(_return_state_of_call_,_callee,"", 0u,
+                         _caller,_exclusionsVector,_what);
+}//__stateReport()
+
+
+
+
 /*
 ________________________________________________________________________________________________________________________
 universal alignment function
@@ -369,7 +391,7 @@ Info_ProgramArguments()
     }
 }
 
-    state_t // lambda
+    state_t
 LeftShiftOut_First_ProgramArgument(std::vector<std::string>::size_type _number_of_additiional_parameters)
 {
     decltype(_number_of_additiional_parameters) minimum_ProgramArguments_size(2); /* 1+1  PA[0] remains, always shift PA[1]*/
