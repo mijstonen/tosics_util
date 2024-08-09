@@ -570,7 +570,6 @@ Info_main_args (int argc, char const* argv[]);
 
 #define SHOW_ARGS info_main_args(argc,argv)
 
-#define MAX_BT_BUFS 100
 
 enum eBreakCategory : int
 /* examples, customize */
@@ -585,7 +584,14 @@ enum eBreakCategory : int
     eBC_handled
 };
 
-void DumpBacktraceInFileStream(int backtrace_output_filehandle_ = STDERR_FILENO);
+
+//:TOSICS_UTIL_STACKTRACE
+/// Provide std::ostream construct at the current source location to provide a stacktrace, to screen, file, string etc.
+/// Works with STREAM2STR
+#define TOSICS_UTIL_STACKTRACE "\n_____ S T A C K T R A C E _____\n"<< std::stacktrace::current() << "\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+
+extern std::vector<std::string> ProgramArguments; // Needed in ThrowBreak()
+
 
 
 //@{ to be moved to separate unit
@@ -614,13 +620,15 @@ ThrowBreak(const EXCEPTION_T& _exception, eBreakCategory _break_category = eBC_d
         } //switch
 #undef throwBreak_EBC
 
-        std::cerr<< std::endl<< HRED << __PRETTY_FUNCTION__
-                 << " break_category_name: '"<< break_category_name
-                 << "'    dumping stacktrace!\n"
-                 << std::stacktrace::current()
-                 << NOCOLOR<<std::endl
-                 ;
-      // DumpBacktraceInFileStream(STDERR_FILENO);
+
+
+
+        std::cerr<< std::endl<< HRED
+            << "executable:"<<ProgramArguments[0]<<" at: "<<__FILE__<<':'<<__LINE__<<": "<<__PRETTY_FUNCTION__
+            << " break_category_name: "<< break_category_name<< NOCOLOR
+            << std::endl
+        ;
+        std::cerr<< HRED<< TOSICS_UTIL_STACKTRACE<< NOCOLOR<<std::endl;
     } // find(_break_category)
     throw _exception;
 }
@@ -892,10 +900,9 @@ Fake_use(_P... /*_args*/ )
     //(void)(_args),...;
 }
 
-extern std::vector<std::string> ProgramArguments;
 void Info_ProgramArguments();
 state_t LeftShiftOut_First_ProgramArgument(std::vector<std::string>::size_type _number_of_additiional_parameters=0);
-void On_signal(int _signal);
+// void On_signal(int _signal);
 void Initialize(int _argC, char const* _argV[]);
 // For now: Allow to use old name.
 #define ShowArgs Info_ProgramArguments

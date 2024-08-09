@@ -261,35 +261,6 @@ Info_main_args (int argc, char const* argv[])
     }
 }
 
-//:DumpBacktraceInFileStream:// show backtrace
-    void
-DumpBacktraceInFileStream(int backtrace_output_filehandle_)
-{
-    // TODO: Fix missing symbols. Do name unmangeling.
-    // Consider the new (since 1.65) Boost.Stacktrace  library.
-
-    static bool entered=false; // avoid recursing
-    static void* btbufs[MAX_BT_BUFS];
-
-    if ( entered ) {
-        // Should not be called inside it self (aka by signal, throw* function)
-        CERROR("PANIC: Re-entered tosics::util::DumpBacktraceInFileStream(), aborting!");
-        abort();
-        return;
-    }
-
-    //else
-    entered=true;
-    int btbufs_used = backtrace(btbufs, MAX_BT_BUFS);
-    if ( btbufs_used >= MAX_BT_BUFS ) {
-        CERROR("PANIC: Too many backtrace buffers in tosics::util::DumpBacktraceInFileStream(), aborting!");
-        abort();
-        return;
-    }
-
-    //else
-    backtrace_symbols_fd(btbufs, btbufs_used, backtrace_output_filehandle_);
-}
 
 //:zipLeftsAndRightsJoin2Str:// Assist VARVALS, but generalized to zip 2 string vectors together
     state_t
@@ -416,24 +387,26 @@ LeftShiftOut_First_ProgramArgument(std::vector<std::string>::size_type _number_o
 };
 
 
+
+    void
+On_signal_do_abort(int _signal)
+{
+    psignal(_signal,STREAM2STR("executable:"<<ProgramArguments[0]<<" at: "<<__FILE__<<':'<<__LINE__<<": "<<__PRETTY_FUNCTION__).c_str());
+#if 1
+    auto stacktrace=STREAM2STR(TOSICS_UTIL_STACKTRACE);
+    CERROR(VARVALS(_signal,stacktrace));
+#endif
+    abort();
+}
+
     void
 Initialize(int _argC, char const* _argV[])
 {
-    signal(SIGSEGV, On_signal);
+    signal(SIGSEGV, On_signal_do_abort);
     for( int argI=0; argI<_argC; ++argI ){
         ProgramArguments.emplace_back(_argV[argI]);
     }
 }
-
-    void
-On_signal(int _signal)
-{
-    psignal(_signal,__func__);
-    CERROR(VARVAL(_signal));
-    tosics::util::DumpBacktraceInFileStream();
-    abort();
-}
-
 
 
 namespace fs=std::filesystem;

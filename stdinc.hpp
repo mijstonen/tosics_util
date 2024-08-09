@@ -83,11 +83,12 @@
 #include <iterator>
 #include <vector>
 #include <deque>
+#include <set>
+#include <unordered_set>
 #include <map>
-#include <tuple>
-#include <list>
-#include <array>
 #include <unordered_map>
+#include <tuple>
+#include <array>
 
 // C++ streams
 #include <streambuf>
@@ -104,14 +105,11 @@
 #include <bitset>
 #include <iterator>
 #include <array>
-#include <set>
-#include <map>
 #include <stack>
 #include <queue>
 #include <deque>
 #include <list>
 #include <forward_list>
-#include <unordered_set>
 
 //C++11 threading
 #include <utility>

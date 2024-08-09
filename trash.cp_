@@ -873,3 +873,47 @@ Cstr2uint64(const char* cs, size_t len)
     return out;
 }
 
+        std::cerr<< std::endl<< HRED << __PRETTY_FUNCTION__
+                 << " break_category_name: '"<< break_category_name
+                 << "'    dumping stacktrace!\n"
+                 << std::stacktrace::current()
+                 << NOCOLOR<<std::endl
+                 ;
+
+
+
+#define MAX_BT_BUFS 100
+void DumpBacktraceInFileStream(int backtrace_output_filehandle_ = STDERR_FILENO);
+
+//:DumpBacktraceInFileStream:// show backtrace. To be called only once before thread is killed
+    void
+DumpBacktraceInFileStream(int backtrace_output_filehandle_)
+{
+    // TODO: Fix missing symbols. Do name unmangeling.
+    // Consider the new (since 1.65) Boost.Stacktrace  library.
+
+    thread_local bool entered=false; // avoid recursing
+    thread_local static void* btbufs[MAX_BT_BUFS];
+
+    if ( entered ) {
+        // Should not be called inside it self (aka by signal, throw* function)
+        CERROR("PANIC: Re-entered tosics::util::DumpBacktraceInFileStream(), aborting!");
+        abort();
+        return;
+    }
+
+    //else
+    entered=true;
+    int btbufs_used = backtrace(btbufs, MAX_BT_BUFS);
+    if ( btbufs_used >= MAX_BT_BUFS ) {
+        CERROR("PANIC: Too many backtrace buffers in tosics::util::DumpBacktraceInFileStream(), aborting!");
+        abort();
+        return;
+    }
+
+    //else
+    backtrace_symbols_fd(btbufs, btbufs_used, backtrace_output_filehandle_);
+}
+
+      // DumpBacktraceInFileStream(STDERR_FILENO);
+    tosics::util::DumpBacktraceInFileStream();
