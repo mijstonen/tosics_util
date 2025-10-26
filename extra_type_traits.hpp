@@ -3,7 +3,7 @@
 #ifndef TYPE_TRAITS_
 #  define TYPE_TRAITS_ 1
 
-#include "stdinc.hpp"
+// See also: showtraits.cpp test
 
 namespace tosics::util
 {
@@ -75,11 +75,24 @@ struct is_to_stream_writable
 #endif
 
 #if 0
-template<typename S,typename T
-    /*specialized*/          >
+// FIXME: WIP
+/*
+For writing conainer types again (I still don't know why it worked before, but not now),
+Containers/Ranges (condition:is_iterable_v) should sayd to be writeable if there elements
+are writable.
+So write a specialization of is_to_stream_writable for that scenario. This will
+compiletime select the correct now_stream_object template function (info.hpp:350..400)
+*/
+    template<
+        typename S,
+        template<typename...T> typename Container_T,
+        typename... T
+//        ,typename std::enable_if_t<is_iterable_v<Container_T<T...> >, int> = 0
+    >
 struct is_to_stream_writable
-<S,T,  std::void_t<decltype( operator<< (std::declval<S&>(), std::declval<T>()) )> >
 : std::true_type {};
+
+
 #endif
 
 template<typename S,typename Ref_T,        /*  actual T& to formal Ref_T  */

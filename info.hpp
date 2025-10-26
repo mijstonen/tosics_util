@@ -938,7 +938,7 @@ class SHA1 //StrongIdentifier /* SHA1CrcEnc64Id */  // customized for use in tos
     using sha1::SHA1::SHA1;
     using sha1::SHA1::processBytes;
 
-    constexpr static char NUMS_0_63_TO_CHAR[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-+?";
+    constexpr static char NUMS_0_65_TO_CHAR[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-+?";
     constexpr static unsigned MODULO_VALUE= 10 + 26 + 26;  // (count 0-9) + (count A-Z) + (count a-z)
 
     uint32_t m_heur=0;      // sum or might be other heuristics value, by default litle endian crc32
@@ -1009,9 +1009,9 @@ class SHA1 //StrongIdentifier /* SHA1CrcEnc64Id */  // customized for use in tos
                     index = pre_index;
             }
 // enable
-            *pUnc64++ = NUMS_0_63_TO_CHAR[ index];
+            *pUnc64++ = NUMS_0_65_TO_CHAR[ index];
 
-            // ASSERT(index<sizeof NUMS_0_63_TO_CHAR);
+            // ASSERT(index<sizeof NUMS_0_65_TO_CHAR);
         };
 
 
@@ -1068,9 +1068,9 @@ class SHA1 //StrongIdentifier /* SHA1CrcEnc64Id */  // customized for use in tos
         // if 1st 3 are same (nearly 200e3 possibilities - but not without collissions),
         // it is likely that rest is the same. So the first (3 or more) characters could
         // be used to split hashes in 2 parts (aka, 1st a directory, 2nd filename).
-        m_outputbuffer[0] = NUMS_0_63_TO_CHAR[ firstindex ];
-        m_outputbuffer[1] = NUMS_0_63_TO_CHAR[has3bitsCnt];
-        m_outputbuffer[2] = NUMS_0_63_TO_CHAR[MODULO_VALUE - otherCnt];
+        m_outputbuffer[0] = NUMS_0_65_TO_CHAR[ firstindex ];
+        m_outputbuffer[1] = NUMS_0_65_TO_CHAR[has3bitsCnt];
+        m_outputbuffer[2] = NUMS_0_65_TO_CHAR[MODULO_VALUE - otherCnt];
 
         *pUnc64++ = '\0';
         *pUnc64++ = '\0';

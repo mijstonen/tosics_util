@@ -7,7 +7,7 @@
 // the BUILD_ALL macro. There is and should be no further use of it.The value does not matter,
 // as long it changes, increase it by one each time you request a complete rebuild makes sense.
 
-#include "stdinc.hpp"
+//#include "stdinc.hpp"
 
 #ifndef UTILS_HPP_
 #define UTILS_HPP_ 1
@@ -902,7 +902,7 @@ Fake_use(_P... /*_args*/ )
 
 void Info_ProgramArguments();
 state_t LeftShiftOut_First_ProgramArgument(std::vector<std::string>::size_type _number_of_additiional_parameters=0);
-// void On_signal(int _signal);
+
 void Initialize(int _argC, char const* _argV[]);
 // For now: Allow to use old name.
 #define ShowArgs Info_ProgramArguments
@@ -1655,7 +1655,7 @@ Cstr2uint128(const char* cs, size_t len)
         constexpr uint64_t
     CHAR_FACTOR=97
     ;
-        uint128_t
+        constexpr uint128_t
     //value_feedback_divider= 3508065638360190344983243375585239263ullll; // max_prime_below((2^128)/CHAR_FACTOR)
     //direct 128 digits input needs to be split into upper and lower 64 bit values
     value_feedback_divider=(uint128_t(190172619316593315ull)<<64) | uint128_t(11600529778312192223ull);
